@@ -6,13 +6,14 @@ Ordered task backlog for the 30-day challenge. No fixed calendar — phases are 
 Specs, design system, data model, generation contract, glossary, ADRs 0001–0003. (This document set.)
 
 ## Phase 1 — Walking skeleton (deployed core loop)
-- [ ] Scaffold Next.js + TypeScript + Tailwind; token architecture with Hearth theme only
-- [ ] Deploy to Vercel from day one (empty shell counts)
-- [ ] `/api/generate` proxy via Vercel AI SDK + zod structured output (GENERATION-CONTRACT.md), rate limit + spend cap
-- [ ] New Recipe screen, minimal: type-to-add ingredient chips + Create CTA (defaults for everything else)
-- [ ] Generating screen with themed loading states + error states
-- [ ] Recipe Detail: Ingredients/Steps/Nutrition tabs, NutrientBar target-vs-actual, EstimatedBadge, placeholder art v1
-- [ ] Persist recipes to localStorage (DATA-MODEL.md stores, zod-validated, versioned)
+- [x] Scaffold Next.js + TypeScript + Tailwind; token architecture with Hearth theme only
+- [ ] Deploy to Vercel from day one (needs Sherlynn's Vercel account — `npx vercel` in the repo)
+- [x] `/api/generate` proxy via Vercel AI SDK + zod structured output (GENERATION-CONTRACT.md), rate limit + spend cap; mock mode when no API key is set
+- [x] New Recipe screen, minimal: type-to-add ingredient chips + Create CTA (defaults for everything else)
+- [x] Generating screen with themed loading states + error states
+- [x] Recipe Detail: Ingredients/Steps/Nutrition tabs, macro share bars, EstimatedBadge, placeholder art v1 (target-vs-actual bars arrive with Phase 2 targets)
+- [x] Persist recipes to localStorage (DATA-MODEL.md stores, zod-validated, versioned)
+- [x] *(pulled forward from Phase 4)* Servings stepper with live quantity rescaling
 
 **Exit test**: on a phone, type 3 ingredients → generate → read a plausible recipe with full Nutrition Breakdown, on the public URL.
 
@@ -29,8 +30,8 @@ Specs, design system, data model, generation contract, glossary, ADRs 0001–000
 - [ ] Allow Other Ingredients toggle + "to buy" marking end-to-end
 
 ## Phase 4 — Library & recipe management
-- [ ] My Recipes grid: favorites (heart), delete, empty state
-- [ ] Servings stepper with live quantity rescaling
+- [x] *(pulled forward)* My Recipes grid: favorites (heart), delete, empty state
+- [x] *(pulled forward to Phase 1)* Servings stepper with live quantity rescaling
 - [ ] Draft persistence for the New Recipe form
 
 ## Phase 5 — Cooking Mode
