@@ -2,9 +2,9 @@
 
 import type { Recipe } from "@/lib/schemas";
 
-// The Dishcover differentiator: per-serving macro + micronutrient panel.
-// Phase 1: macros shown as share-of-calories bars. Phase 2 adds
-// target-vs-actual bars when a Macro Target was set.
+// The Dishcover differentiator: per-serving macro + micronutrient panel,
+// plus target-vs-actual bars for each macro the user set a Macro Target
+// for. No-target recipes render the plain panel unchanged.
 
 const MICROS: { key: keyof Recipe["nutrition"]["perServing"]; label: string; unit: string }[] = [
   { key: "fiberG", label: "Fiber", unit: "g" },
@@ -24,6 +24,15 @@ const MACRO_COLORS = {
   fat: "var(--th-highlight)",
 };
 
+// Macro Targets are soft: color by distance band (DESIGN-SYSTEM.md) —
+// within 10% on-target, within 25% near, beyond that far.
+function bandColor(actual: number, target: number): string {
+  const off = Math.abs(actual - target) / target;
+  if (off <= 0.1) return "var(--th-positive)";
+  if (off <= 0.25) return "var(--th-warn)";
+  return "var(--th-danger)";
+}
+
 export function NutritionPanel({ recipe }: { recipe: Recipe }) {
   const n = recipe.nutrition.perServing;
   const kcalFromMacros = 4 * n.proteinG + 4 * n.carbsG + 9 * n.fatG || 1;
@@ -33,6 +42,16 @@ export function NutritionPanel({ recipe }: { recipe: Recipe }) {
     { label: "Carbs", grams: n.carbsG, kcal: 4 * n.carbsG, color: MACRO_COLORS.carbs },
     { label: "Fat", grams: n.fatG, kcal: 9 * n.fatG, color: MACRO_COLORS.fat },
   ];
+
+  const macroTarget = recipe.nutrition.macroTarget;
+  const targeted = [
+    { label: "Protein", actual: n.proteinG, target: macroTarget?.proteinG },
+    { label: "Carbs", actual: n.carbsG, target: macroTarget?.carbsG },
+    { label: "Fat", actual: n.fatG, target: macroTarget?.fatG },
+  ].filter(
+    (m): m is { label: string; actual: number; target: number } =>
+      typeof m.target === "number" && m.target > 0
+  );
 
   return (
     <div>
@@ -85,6 +104,53 @@ export function NutritionPanel({ recipe }: { recipe: Recipe }) {
             </div>
           ))}
         </dl>
+
+        {targeted.length > 0 && (
+          <div className="mt-6 border-t border-ink/10 pt-5">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-ink-soft">
+              Vs your Macro Target
+            </p>
+            <dl className="mt-4 space-y-4">
+              {targeted.map(({ label, actual, target }, i) => {
+                const color = bandColor(actual, target);
+                const scale = Math.max(actual, target) * 1.15 || 1;
+                return (
+                  <div key={label}>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="text-xs font-bold text-ink-soft">{label}</dt>
+                      <dd className="font-display text-lg font-semibold">
+                        {Math.round(actual)}g
+                        <span className="font-body text-xs font-bold text-ink-soft">
+                          {" "}/ {Math.round(target)}g target
+                        </span>
+                      </dd>
+                    </div>
+                    <div
+                      className="relative mt-1.5 h-3 rounded-control bg-surface"
+                      aria-hidden
+                    >
+                      <span
+                        className="bar-fill absolute inset-y-0 left-0 rounded-control"
+                        style={{
+                          width: `${Math.min((actual / scale) * 100, 100)}%`,
+                          background: color,
+                          "--rise-delay": `${i * 120}ms`,
+                        } as React.CSSProperties}
+                      />
+                      <span
+                        className="absolute -inset-y-1 w-0.5 rounded-full bg-ink/70"
+                        style={{ left: `${Math.min((target / scale) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </dl>
+            <p className="mt-4 text-xs font-semibold text-ink-soft">
+              Soft target — close counts as a win.
+            </p>
+          </div>
+        )}
       </div>
 
       <dl className="mt-4">

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { nanoid } from "nanoid";
 import { Chip, PrimaryButton } from "@/components/ui";
+import { MacroPresetPicker } from "@/components/MacroPresetPicker";
 import { useRecipeStore, usePantryStore } from "@/lib/store";
-import type { Recipe } from "@/lib/schemas";
+import type { MacroTarget, Recipe } from "@/lib/schemas";
 
 const SUGGESTIONS = [
   "chicken breast", "eggs", "spinach", "tomatoes", "salmon",
@@ -26,6 +27,7 @@ export default function NewRecipePage() {
   const router = useRouter();
   const addRecipe = useRecipeStore((s) => s.addRecipe);
   const [ingredients, setIngredients] = useState<string[]>([]);
+  const [macroTarget, setMacroTarget] = useState<MacroTarget | undefined>(undefined);
   const [draft, setDraft] = useState("");
   const [phase, setPhase] = useState<"form" | "generating" | "error">("form");
   const [lineIdx, setLineIdx] = useState(0);
@@ -53,6 +55,7 @@ export default function NewRecipePage() {
         body: JSON.stringify({
           capturedIngredients: ingredients,
           pantry: usePantryStore.getState().pantry,
+          macroTarget,
         }),
       });
       if (!res.ok) throw new Error(`${res.status}`);
@@ -63,7 +66,13 @@ export default function NewRecipePage() {
         createdAt: new Date().toISOString(),
         favorite: false,
         artSeed: Math.floor(Math.random() * 2 ** 31),
-        nutrition: { ...generated.nutrition, estimated: true as const },
+        // Macro Target is client-owned: mock mode (and any provider) never
+        // echoes it back, so attach what the user asked for here.
+        nutrition: {
+          ...generated.nutrition,
+          estimated: true as const,
+          ...(macroTarget && { macroTarget }),
+        },
       };
       addRecipe(recipe);
       router.push(`/recipe/${recipe.id}`);
@@ -175,6 +184,19 @@ export default function NewRecipePage() {
               {s}
             </Chip>
           ))}
+        </div>
+      </section>
+
+      <section
+        className="rise mt-4 rounded-card bg-surface p-6 shadow-card"
+        style={{ "--rise-delay": "160ms" } as React.CSSProperties}
+      >
+        <h2 className="text-xl font-semibold">Macro Target</h2>
+        <p className="mt-1 text-sm font-semibold text-ink-soft">
+          Optional. Pick a preset or set your own per-serving goal.
+        </p>
+        <div className="mt-4">
+          <MacroPresetPicker onChange={setMacroTarget} />
         </div>
       </section>
 
