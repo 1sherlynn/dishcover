@@ -197,6 +197,15 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
 
         {tab === "Nutrition" && <NutritionPanel recipe={recipe} />}
       </section>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-2xl px-5 pb-6 md:px-6">
+        <Link
+          href={`/recipe/${recipe.id}/cook`}
+          className="block rounded-control bg-accent py-4 text-center text-lg font-bold text-accent-ink shadow-card transition-transform active:scale-[0.98]"
+        >
+          Start cooking
+        </Link>
+      </div>
     </main>
   );
 }
