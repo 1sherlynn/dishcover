@@ -38,6 +38,10 @@ _Avoid_: Recipe options
 A per-generation toggle. Off: recipes use only Captured Ingredients + Pantry. On: the generator may introduce ingredients the user would need to buy.
 _Avoid_: Shopping mode, strict mode
 
+**Generator**:
+What turns a Generation Request into a Recipe, honoring the standing rules: nothing from the Avoid List, Dietary Preferences strictly, only owned Equipment, Macro Targets softly. Recipes come from the Generator; the app never edits them by hand.
+_Avoid_: AI, the model, engine
+
 **Generation Request**:
 The complete payload for one generation: the user's per-generation choices (Captured Ingredients, Macro Target, Meal Settings, Allow Other Ingredients) combined with their standing inputs (Pantry, Dietary Preferences, Avoid List, Equipment). Standing inputs join every Generation Request automatically; the user never re-enters them.
 _Avoid_: Payload, request body
