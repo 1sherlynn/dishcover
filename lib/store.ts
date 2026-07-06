@@ -46,6 +46,34 @@ export const useRecipeStore = create<RecipeState>()(
   )
 );
 
+// The Pantry (CONTEXT.md): staples the user always has at home. A standing
+// list the generator may draw on freely without re-entry.
+
+interface PantryState {
+  pantry: string[]; // ingredient names, canonical lowercase
+  addStaple: (name: string) => void;
+  removeStaple: (name: string) => void;
+}
+
+export const usePantryStore = create<PantryState>()(
+  persist(
+    (set) => ({
+      pantry: [],
+      addStaple: (name) =>
+        set((s) =>
+          s.pantry.includes(name) ? s : { pantry: [...s.pantry, name] }
+        ),
+      removeStaple: (name) =>
+        set((s) => ({ pantry: s.pantry.filter((x) => x !== name) })),
+    }),
+    {
+      name: "dishcover.pantry.v1",
+      version: 1,
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
+
 /** Gate for store-driven UI so SSR markup never mismatches localStorage. */
 import { useSyncExternalStore } from "react";
 const subscribeNoop = () => () => {};

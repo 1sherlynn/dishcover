@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { nanoid } from "nanoid";
 import { Chip, PrimaryButton } from "@/components/ui";
-import { useRecipeStore } from "@/lib/store";
+import { useRecipeStore, usePantryStore } from "@/lib/store";
 import type { Recipe } from "@/lib/schemas";
 
 const SUGGESTIONS = [
@@ -50,7 +50,10 @@ export default function NewRecipePage() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ capturedIngredients: ingredients }),
+        body: JSON.stringify({
+          capturedIngredients: ingredients,
+          pantry: usePantryStore.getState().pantry,
+        }),
       });
       if (!res.ok) throw new Error(`${res.status}`);
       const generated = await res.json();
