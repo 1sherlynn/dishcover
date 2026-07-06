@@ -1,5 +1,6 @@
-import { generateObject } from "ai";
+import { generateObject, type LanguageModel } from "ai";
 import { google } from "@ai-sdk/google";
+import { groq } from "@ai-sdk/groq";
 import {
   GenerateRequestSchema,
   GeneratedRecipeSchema,
@@ -18,6 +19,29 @@ const WINDOW_MS = 10 * 60 * 1000;
 const hits = new Map<string, number[]>();
 let dailyCount = 0;
 let dailyKey = "";
+
+// Provider switch (ADR-0003): LLM_PROVIDER picks explicitly; otherwise the
+// first configured key wins (groq → google). No key at all → mock mode.
+// LLM_MODEL overrides the per-provider default.
+function resolveModel(): LanguageModel | null {
+  const provider =
+    process.env.LLM_PROVIDER ??
+    (process.env.GROQ_API_KEY
+      ? "groq"
+      : process.env.GOOGLE_GENERATIVE_AI_API_KEY
+        ? "google"
+        : "mock");
+
+  switch (provider) {
+    case "groq":
+      // default must be a model on Groq's structured-outputs list (json_schema)
+      return groq(process.env.LLM_MODEL ?? "openai/gpt-oss-120b");
+    case "google":
+      return google(process.env.LLM_MODEL ?? "gemini-2.5-flash");
+    default:
+      return null;
+  }
+}
 
 function guard(ip: string): { code: string; status: number } | null {
   const today = new Date().toISOString().slice(0, 10);
@@ -62,7 +86,7 @@ Rules (non-negotiable):
 6. Per-serving nutrition must be self-consistent: kcal within ±10% of 4·proteinG + 4·carbsG + 9·fatG. Estimate micronutrients honestly.
 7. ${macro ? `Aim close to the per-serving macro target (${macro}) with plausible food — never pad with unrealistic quantities. It is a soft target.` : "No macro target was set — just make it balanced and delicious."}
 8. Respect the time budget. Add timerSeconds only to steps with a real wait/cook duration.
-9. Write ingredient names in canonical lowercase. Steps get short imperative titles.`;
+9. Write ingredient names in canonical lowercase. The recipe title is in Title Case. Steps get short imperative titles.`;
 
   const prompt = `Create one recipe.
 
@@ -98,7 +122,8 @@ export async function POST(request: Request) {
   if (blocked) return Response.json({ code: blocked.code }, { status: blocked.status });
 
   // Mock mode: no key configured → deterministic sample, UI stays testable.
-  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+  const model = resolveModel();
+  if (!model) {
     await new Promise((r) => setTimeout(r, 1200));
     return Response.json(mockRecipe(req));
   }
@@ -108,7 +133,7 @@ export async function POST(request: Request) {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const { object } = await generateObject({
-        model: google("gemini-2.5-flash"),
+        model,
         schema: GeneratedRecipeSchema,
         system,
         prompt:
