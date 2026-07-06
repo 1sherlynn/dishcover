@@ -7,18 +7,17 @@ import {
   type GenerateRequest,
 } from "@/lib/schemas";
 import { mockRecipe } from "@/lib/mock-recipe";
+import { createRateGuard } from "@/lib/rate-guard";
+import { applyKcalConsistency } from "@/lib/nutrition";
 
 // Thin stateless proxy (ADR-0002): holds the key, rate-limits, caps spend.
 // Guardrails are in-memory — per serverless instance, a courtesy barrier for
 // a personal+friends deployment, not real abuse protection.
 
-const PER_IP_LIMIT = Number(process.env.GENERATIONS_PER_10MIN_PER_IP ?? 10);
-const DAILY_CAP = Number(process.env.DAILY_GENERATION_CAP ?? 100);
-const WINDOW_MS = 10 * 60 * 1000;
-
-const hits = new Map<string, number[]>();
-let dailyCount = 0;
-let dailyKey = "";
+const guard = createRateGuard({
+  perIpLimit: Number(process.env.GENERATIONS_PER_10MIN_PER_IP ?? 10),
+  dailyCap: Number(process.env.DAILY_GENERATION_CAP ?? 100),
+});
 
 // Provider switch (ADR-0003): LLM_PROVIDER picks explicitly; otherwise the
 // first configured key wins (groq → google). No key at all → mock mode.
@@ -41,23 +40,6 @@ function resolveModel(): LanguageModel | null {
     default:
       return null;
   }
-}
-
-function guard(ip: string): { code: string; status: number } | null {
-  const today = new Date().toISOString().slice(0, 10);
-  if (today !== dailyKey) {
-    dailyKey = today;
-    dailyCount = 0;
-  }
-  if (dailyCount >= DAILY_CAP) return { code: "BUDGET_EXHAUSTED", status: 402 };
-
-  const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
-  if (recent.length >= PER_IP_LIMIT) return { code: "RATE_LIMITED", status: 429 };
-  recent.push(now);
-  hits.set(ip, recent);
-  dailyCount++;
-  return null;
 }
 
 function buildPrompt(req: GenerateRequest): { system: string; prompt: string } {
@@ -143,11 +125,7 @@ export async function POST(request: Request) {
       });
 
       // Self-consistency: recompute kcal from macros, correct if >10% off.
-      const n = object.nutrition.perServing;
-      const computed = 4 * n.proteinG + 4 * n.carbsG + 9 * n.fatG;
-      if (computed > 0 && Math.abs(n.kcal - computed) / computed > 0.1) {
-        n.kcal = Math.round(computed);
-      }
+      object.nutrition.perServing = applyKcalConsistency(object.nutrition.perServing);
 
       return Response.json(object);
     } catch (err) {
