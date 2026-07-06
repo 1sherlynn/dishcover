@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { AppHeader, HeartButton } from "@/components/ui";
 import { PlaceholderArt } from "@/components/PlaceholderArt";
-import { useRecipeStore, useHydrated } from "@/lib/store";
+import { useRecipeStore, usePantryStore, useHydrated } from "@/lib/store";
 
 export default function HomePage() {
   const hydrated = useHydrated();
   const recipes = useRecipeStore((s) => s.recipes);
   const toggleFavorite = useRecipeStore((s) => s.toggleFavorite);
+  const pantry = usePantryStore((s) => s.pantry);
 
   return (
     <main>
@@ -41,6 +42,40 @@ export default function HomePage() {
           <path d="M42 30 q 5 -6 0 -12 M52 28 q 5 -6 0 -12 M62 30 q 5 -6 0 -12" fill="none" stroke="var(--th-ink)" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
         </svg>
       </section>
+
+      <Link
+        href="/pantry"
+        className="rise mt-4 flex items-center justify-between gap-4 rounded-card bg-surface px-6 py-5 shadow-card transition-all hover:brightness-[1.02] active:scale-[0.99]"
+        style={{ "--rise-delay": "100ms" } as React.CSSProperties}
+      >
+        <div>
+          <p className="text-sm font-bold text-ink-soft">Manage my</p>
+          <p className="font-display text-2xl font-semibold tracking-tight">
+            Pantry
+          </p>
+          {hydrated && (
+            <p className="mt-1 text-xs font-bold text-ink-soft">
+              {pantry.length > 0
+                ? `${pantry.length} staple${pantry.length === 1 ? "" : "s"} always on hand`
+                : "Staples your recipes can always use"}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <svg aria-hidden viewBox="0 0 100 60" className="h-14 w-24 opacity-80">
+            <rect x="8" y="22" width="20" height="30" rx="5" fill="none" stroke="var(--th-accent)" strokeWidth="2.5" />
+            <path d="M10 30 h16" stroke="var(--th-accent)" strokeWidth="2" strokeLinecap="round" />
+            <rect x="12" y="15" width="12" height="7" rx="2" fill="none" stroke="var(--th-accent)" strokeWidth="2" />
+            <ellipse cx="52" cy="42" rx="14" ry="10" fill="none" stroke="var(--th-highlight)" strokeWidth="2.5" />
+            <path d="M52 32 q -3 -8 4 -12 M52 32 q 5 -6 10 -4" fill="none" stroke="var(--th-ink)" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+            <circle cx="83" cy="38" r="12" fill="none" stroke="var(--th-ink)" strokeWidth="2.5" opacity="0.6" />
+            <path d="M78 34 q 5 -4 10 0" fill="none" stroke="var(--th-ink)" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+          </svg>
+          <span aria-hidden className="text-xl font-bold text-ink-soft">
+            ›
+          </span>
+        </div>
+      </Link>
 
       <section className="mt-10">
         <h2
