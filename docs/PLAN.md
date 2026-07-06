@@ -18,13 +18,13 @@ Specs, design system, data model, generation contract, glossary, ADRs 0001–000
 **Exit test**: on a phone, type 3 ingredients → generate → read a plausible recipe with full Nutrition Breakdown, on the public URL.
 
 ## Phase 2 — Macro Targets (the differentiator)
-- [ ] MacroPresetPicker: Balanced / High Protein / Low Carb / Keto-ish / Custom / None → editable gram fields
-- [ ] Wire `macroTarget` through request + Nutrition tab comparison bars
-- [ ] Prompt tuning pass: verify macro adherence + kcal self-consistency across ~20 varied test generations
+- [x] MacroPresetPicker: Balanced / High Protein / Low Carb / Keto-ish / Custom / None → editable gram fields *(issue #1, agent wave 1)*
+- [x] Wire `macroTarget` through request + Nutrition tab comparison bars *(issue #1)*
+- [ ] Prompt tuning pass: verify macro adherence + kcal self-consistency across ~20 varied test generations *(issue #7)*
 
 ## Phase 3 — Standing preferences
-- [ ] Home screen proper: pantry card, My Recipes grid, FAB
-- [ ] Pantry screen (suggestion chips + add/remove)
+- [x] Home screen: pantry card *(issue #2)*; FAB still pending *(with Scan, issue #6)*
+- [x] Pantry screen (suggestion chips + add/remove) *(issue #2, agent wave 1)*
 - [ ] Settings: Dietary Preferences, Avoid List, Equipment
 - [ ] Meal Settings row on New Recipe: guests / time / cuisine chips
 - [ ] Allow Other Ingredients toggle + "to buy" marking end-to-end
@@ -35,8 +35,8 @@ Specs, design system, data model, generation contract, glossary, ADRs 0001–000
 - [ ] Draft persistence for the New Recipe form
 
 ## Phase 5 — Cooking Mode
-- [ ] Full-screen step player (always-Midnight palette): progress segments, next/back, close
-- [ ] Countdown timers on steps with `timerSeconds`; wake-lock where supported
+- [x] Full-screen step player (always-Midnight palette): progress segments, next/back, close *(issue #5, agent wave 1)*
+- [x] Countdown timers on steps with `timerSeconds`; wake-lock where supported *(issue #5)*
 
 ## Phase 6 — Scan my fridge
 - [ ] `/api/scan` vision endpoint per contract
