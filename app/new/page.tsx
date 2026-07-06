@@ -3,11 +3,10 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { nanoid } from "nanoid";
 import { Chip, PrimaryButton } from "@/components/ui";
 import { MacroPresetPicker } from "@/components/MacroPresetPicker";
-import { useRecipeStore, usePantryStore } from "@/lib/store";
-import type { MacroTarget, Recipe } from "@/lib/schemas";
+import { generateRecipe, type GenerationError } from "@/lib/generate-recipe";
+import type { MacroTarget } from "@/lib/schemas";
 
 const SUGGESTIONS = [
   "chicken breast", "eggs", "spinach", "tomatoes", "salmon",
@@ -25,11 +24,11 @@ const SIMMER_LINES = [
 
 export default function NewRecipePage() {
   const router = useRouter();
-  const addRecipe = useRecipeStore((s) => s.addRecipe);
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [macroTarget, setMacroTarget] = useState<MacroTarget | undefined>(undefined);
   const [draft, setDraft] = useState("");
-  const [phase, setPhase] = useState<"form" | "generating" | "error">("form");
+  const [phase, setPhase] = useState<"form" | "generating">("form");
+  const [error, setError] = useState<GenerationError | null>(null);
   const [lineIdx, setLineIdx] = useState(0);
   const lineTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -43,43 +42,19 @@ export default function NewRecipePage() {
 
   const generate = async () => {
     setPhase("generating");
+    setError(null);
     setLineIdx(0);
     lineTimer.current = setInterval(
       () => setLineIdx((i) => (i + 1) % SIMMER_LINES.length),
       2600
     );
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          capturedIngredients: ingredients,
-          pantry: usePantryStore.getState().pantry,
-          macroTarget,
-        }),
-      });
-      if (!res.ok) throw new Error(`${res.status}`);
-      const generated = await res.json();
-      const recipe: Recipe = {
-        ...generated,
-        id: nanoid(10),
-        createdAt: new Date().toISOString(),
-        favorite: false,
-        artSeed: Math.floor(Math.random() * 2 ** 31),
-        // Macro Target is client-owned: mock mode (and any provider) never
-        // echoes it back, so attach what the user asked for here.
-        nutrition: {
-          ...generated.nutrition,
-          estimated: true as const,
-          ...(macroTarget && { macroTarget }),
-        },
-      };
-      addRecipe(recipe);
-      router.push(`/recipe/${recipe.id}`);
-    } catch {
-      setPhase("error");
-    } finally {
-      if (lineTimer.current) clearInterval(lineTimer.current);
+    const result = await generateRecipe({ capturedIngredients: ingredients, macroTarget });
+    if (lineTimer.current) clearInterval(lineTimer.current);
+    if (result.ok) {
+      router.push(`/recipe/${result.recipe.id}`);
+    } else {
+      setError(result.error);
+      setPhase("form");
     }
   };
 
@@ -123,9 +98,14 @@ export default function NewRecipePage() {
         <h1 className="text-3xl font-semibold">New recipe</h1>
       </header>
 
-      {phase === "error" && (
+      {error && (
         <p role="alert" className="rise mb-4 rounded-card bg-danger/10 px-5 py-4 font-bold text-danger">
-          The kitchen hiccuped — your ingredients are safe, try again.
+          {error.message}
+          {error.retryable && (
+            <span className="mt-1 block text-sm font-semibold text-ink-soft">
+              Your ingredients are still here — hit create again when ready.
+            </span>
+          )}
         </p>
       )}
 
