@@ -79,10 +79,10 @@ export function MacroPresetPicker({
             type="button"
             onClick={() => pick(name)}
             aria-pressed={preset === name}
-            className={`rise rounded-control border px-4 py-2 text-sm font-semibold transition-colors ${
+            className={`rise border-[1.5px] px-3.5 py-1.5 text-sm font-bold transition-colors ${
               preset === name
-                ? "border-ink bg-ink text-bg"
-                : "border-ink/15 bg-surface text-ink"
+                ? "border-ink bg-accent text-accent-ink"
+                : "border-dashed border-ink/60 bg-surface text-ink"
             }`}
             style={{ "--rise-delay": `${i * 35}ms` } as React.CSSProperties}
           >
@@ -96,9 +96,7 @@ export function MacroPresetPicker({
           <div className="grid grid-cols-3 gap-2">
             {MACROS.map(({ key, label }) => (
               <label key={key} className="block">
-                <span className="text-xs font-bold uppercase tracking-[0.18em] text-ink-soft">
-                  {label}
-                </span>
+                <span className="zine-label text-[9px] text-ink-soft">{label}</span>
                 <span className="relative mt-1.5 block">
                   <input
                     value={fields[key]}
@@ -108,7 +106,7 @@ export function MacroPresetPicker({
                     inputMode="numeric"
                     placeholder="—"
                     aria-label={`${label} target in grams per serving`}
-                    className="w-full rounded-control border border-ink/15 bg-bg py-2.5 pl-4 pr-8 font-display text-lg font-semibold placeholder:text-ink-soft/70 focus:border-accent focus:outline-none"
+                    className="w-full border-2 border-ink bg-surface py-2 pl-3 pr-7 font-display text-lg font-bold placeholder:text-ink-soft/70 focus:border-accent focus:outline-none"
                   />
                   <span
                     aria-hidden
@@ -120,9 +118,8 @@ export function MacroPresetPicker({
               </label>
             ))}
           </div>
-          <p className="mt-3 text-xs font-semibold leading-relaxed text-ink-soft">
-            Per-serving grams, whatever the guest count. A soft target — the
-            recipe aims close and reports how it landed.
+          <p className="font-hand mt-3 text-lg leading-none text-highlight">
+            per serving, whatever the guest count
           </p>
         </div>
       )}

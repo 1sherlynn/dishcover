@@ -5,22 +5,27 @@
    Raw tokens are --th-*; Tailwind utilities map to them via @theme inline.
 --------------------------------------------------------------------------- */
 
+/* Riso — the app's art direction (ADR-0004). The Ink Kit:
+   ink #2E2620 · paper #FAF3E3 · spot inks teal/mustard/moss/blueberry/plum */
 :root,
-:root[data-theme="hearth"] {
-  --th-bg: #faf3e8;
-  --th-surface: #ffffff;
-  --th-surface-alt: #f5e9d9;
-  --th-ink: #2e4633;
-  --th-ink-soft: #b98a6f;
-  --th-accent: #f5a83c;
-  --th-accent-ink: #3a2e15;
-  --th-highlight: #e8542f;
-  --th-positive: #4a8f5c;
-  --th-warn: #d9962e;
-  --th-danger: #c8451f;
-  --th-radius-card: 24px;
-  --th-radius-control: 999px;
-  --th-shadow-card: 0 10px 30px -12px rgba(87, 62, 32, 0.25);
+:root[data-theme="riso"] {
+  --th-bg: #faf3e3;
+  --th-surface: #fdf8ec;
+  --th-surface-alt: #f1e6cc;
+  --th-ink: #2e2620;
+  --th-ink-soft: #6a5f4f;
+  --th-accent: #b85f87;
+  --th-accent-ink: #faf3e3;
+  --th-highlight: #1e958a;
+  --th-positive: #6f9a4e;
+  --th-warn: #e3a21e;
+  --th-danger: #be4b33;
+  --th-wash: #ddefe8;
+  --th-frame: #e3a21e;
+  --th-pop: #4e74b8;
+  --th-radius-card: 4px;
+  --th-radius-control: 2px;
+  --th-shadow-card: 6px 6px 0 rgba(46, 38, 32, 0.14);
   --th-motion-speed: 1;
 }
 
@@ -38,6 +43,9 @@
   --th-positive: #7fb98a;
   --th-warn: #e8b14e;
   --th-danger: #e07856;
+  --th-wash: #314236;
+  --th-frame: #e8b14e;
+  --th-pop: #7f9ec9;
   --th-radius-card: 20px;
   --th-radius-control: 999px;
   --th-shadow-card: none;
@@ -57,6 +65,9 @@
   --color-positive: var(--th-positive);
   --color-warn: var(--th-warn);
   --color-danger: var(--th-danger);
+  --color-wash: var(--th-wash);
+  --color-frame: var(--th-frame);
+  --color-pop: var(--th-pop);
   --color-white: #ffffff;
   --color-black: #000000;
   --color-transparent: transparent;
@@ -65,8 +76,9 @@
   --radius-control: var(--th-radius-control);
   --shadow-card: var(--th-shadow-card);
 
-  --font-display: var(--font-fraunces), "Fraunces", georgia, serif;
-  --font-body: var(--font-nunito), "Nunito Sans", system-ui, sans-serif;
+  --font-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: var(--font-courier), "Courier Prime", ui-monospace, monospace;
+  --font-hand: var(--font-caveat), "Caveat", cursive;
 }
 
 /* ---------------------------------------------------------------------------
@@ -76,28 +88,29 @@
 body {
   background: var(--th-bg);
   color: var(--th-ink);
-  font-family: var(--font-body);
+  /* next/font variables directly — @theme inline vars aren't emitted as CSS custom properties */
+  font-family: var(--font-courier), "Courier Prime", ui-monospace, monospace;
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   transition: background-color 300ms ease, color 300ms ease;
 }
 
-/* Warm atmosphere: faint blush radials + paper grain over the cream */
+/* Riso paper: faint ink-bleed radials + grain, like a printed zine page */
 .atmosphere {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60% 45% at 85% -5%, rgba(245, 168, 60, 0.14), transparent 70%),
-    radial-gradient(50% 40% at -10% 30%, rgba(232, 84, 47, 0.07), transparent 70%),
-    radial-gradient(45% 40% at 50% 110%, rgba(46, 70, 51, 0.06), transparent 70%);
+    radial-gradient(70% 50% at 80% -10%, rgba(227, 162, 30, 0.08), transparent 70%),
+    radial-gradient(55% 45% at -10% 40%, rgba(30, 149, 138, 0.05), transparent 70%),
+    radial-gradient(50% 40% at 55% 115%, rgba(46, 38, 32, 0.05), transparent 70%);
 }
 .atmosphere::after {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.35;
+  opacity: 0.5;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.27 0 0 0 0 0.16 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -107,8 +120,35 @@ body {
 }
 
 h1, h2, h3 {
-  font-family: var(--font-display);
-  font-variation-settings: "SOFT" 60, "WONK" 1;
+  font-family: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Riso utilities: zine labels, stamps, stickers, hand annotations */
+.font-hand {
+  font-family: var(--font-caveat), "Caveat", cursive;
+}
+.zine-label {
+  font-family: var(--font-courier), "Courier Prime", ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+.stamp {
+  display: inline-block;
+  border: 1.5px dashed var(--th-ink);
+  padding: 2px 10px;
+  background: var(--th-surface);
+  transform: rotate(-2deg);
+}
+.sticker {
+  display: inline-block;
+  background: var(--th-accent);
+  color: var(--th-accent-ink);
+  padding: 3px 12px;
+  transform: rotate(-3deg);
+  box-shadow: 2px 2px 0 rgba(46, 38, 32, 0.3);
 }
 
 /* ---------------------------------------------------------------------------

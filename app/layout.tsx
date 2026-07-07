@@ -1,16 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Nunito_Sans } from "next/font/google";
+import { Bricolage_Grotesque, Courier_Prime, Caveat } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
-  variable: "--font-fraunces",
-  axes: ["SOFT", "WONK", "opsz"],
+  variable: "--font-bricolage",
 });
 
-const nunito = Nunito_Sans({
+const courier = Courier_Prime({
   subsets: ["latin"],
-  variable: "--font-nunito",
+  weight: ["400", "700"],
+  variable: "--font-courier",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  variable: "--font-caveat",
 });
 
 export const metadata: Metadata = {
@@ -20,13 +25,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf3e8",
+  themeColor: "#faf3e3",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="hearth">
-      <body className={`${fraunces.variable} ${nunito.variable}`}>
+    <html lang="en" data-theme="riso">
+      <body className={`${bricolage.variable} ${courier.variable} ${caveat.variable}`}>
         <div className="atmosphere" />
         <div className="mx-auto min-h-dvh w-full max-w-2xl px-5 pb-28 pt-6 md:px-6">
           {children}

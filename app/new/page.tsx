@@ -95,26 +95,40 @@ export default function NewRecipePage() {
         >
           ←
         </Link>
-        <h1 className="text-3xl font-semibold">New recipe</h1>
+        <h1 className="text-3xl font-extrabold uppercase">Build a recipe</h1>
       </header>
 
       {error && (
-        <p role="alert" className="rise mb-4 rounded-card bg-danger/10 px-5 py-4 font-bold text-danger">
+        <p role="alert" className="rise mb-4 border-2 border-danger bg-surface px-5 py-4 font-bold text-danger">
           {error.message}
           {error.retryable && (
-            <span className="mt-1 block text-sm font-semibold text-ink-soft">
-              Your ingredients are still here — hit create again when ready.
+            <span className="mt-1 block text-sm font-bold text-ink-soft">
+              Your ingredients are still here — hit cook again when ready.
             </span>
           )}
         </p>
       )}
 
-      <section
-        className="rise rounded-card bg-surface p-6 shadow-card"
-        style={{ "--rise-delay": "80ms" } as React.CSSProperties}
-      >
-        <h2 className="text-xl font-semibold">What have you got?</h2>
-        <p className="mt-1 text-sm font-semibold text-ink-soft">
+      <section className="rise" style={{ "--rise-delay": "80ms" } as React.CSSProperties}>
+        <h2 className="zine-label">Ingredients</h2>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <span className="grid place-items-center border-2 border-ink bg-accent px-2 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-accent-ink">
+            ✎ Type
+          </span>
+          <span
+            className="grid place-items-center border-2 border-ink/30 bg-surface px-2 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-ink-soft/60"
+            title="Coming soon"
+          >
+            ◉ Dictate
+          </span>
+          <span
+            className="grid place-items-center border-2 border-ink/30 bg-surface px-2 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-ink-soft/60"
+            title="Coming soon"
+          >
+            ⧇ Scan
+          </span>
+        </div>
+        <p className="mt-2 text-xs font-bold text-ink-soft">
           The stars of your dish — the recipe is built around them.
         </p>
 
@@ -128,15 +142,15 @@ export default function NewRecipePage() {
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Add an ingredient…"
+            placeholder="ADD AN INGREDIENT…"
             aria-label="Add an ingredient"
-            className="min-w-0 flex-1 rounded-control border border-ink/15 bg-bg px-5 py-3 font-semibold placeholder:text-ink-soft/70 focus:border-accent focus:outline-none"
+            className="min-w-0 flex-1 border-2 border-ink bg-surface px-4 py-3 font-bold placeholder:text-xs placeholder:font-bold placeholder:uppercase placeholder:tracking-[0.18em] placeholder:text-ink-soft/70 focus:border-accent focus:outline-none"
           />
           <button
             type="submit"
             aria-label="Add"
             disabled={!draft.trim()}
-            className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent text-xl font-bold text-accent-ink transition-transform enabled:active:scale-90 disabled:opacity-40"
+            className="grid h-[50px] w-[50px] shrink-0 place-items-center border-2 border-ink bg-accent text-xl font-bold text-accent-ink transition-transform enabled:active:translate-y-0.5 disabled:opacity-40"
           >
             +
           </button>
@@ -155,9 +169,7 @@ export default function NewRecipePage() {
           </div>
         )}
 
-        <p className="mt-6 text-xs font-bold uppercase tracking-[0.18em] text-ink-soft">
-          Suggestions
-        </p>
+        <p className="zine-label mt-6 text-ink-soft">Suggestions</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {SUGGESTIONS.filter((s) => !ingredients.includes(s)).map((s, i) => (
             <Chip key={s} onClick={() => add(s)} delay={120 + i * 35}>
@@ -168,21 +180,28 @@ export default function NewRecipePage() {
       </section>
 
       <section
-        className="rise mt-4 rounded-card bg-surface p-6 shadow-card"
+        className="rise relative mt-10 border-2 border-ink bg-wash p-5 shadow-card"
         style={{ "--rise-delay": "160ms" } as React.CSSProperties}
       >
-        <h2 className="text-xl font-semibold">Macro Target</h2>
-        <p className="mt-1 text-sm font-semibold text-ink-soft">
-          Optional. Pick a preset or set your own per-serving goal.
+        <span className="zine-label absolute -top-3 left-4 bg-pop px-2.5 py-1 text-white">
+          Macro Target
+        </span>
+        <p className="mt-2 text-sm font-bold text-ink-soft">
+          Soft — we aim close, never refuse.
         </p>
         <div className="mt-4">
           <MacroPresetPicker onChange={setMacroTarget} />
         </div>
       </section>
 
+      <footer className="mt-10 flex items-center justify-between border-t-2 border-ink pb-4 pt-3">
+        <span className="zine-label">✳ Dishcover</span>
+        <span className="zine-label text-ink-soft">Pg. 04</span>
+      </footer>
+
       <div className="fixed inset-x-0 bottom-0 mx-auto max-w-2xl px-5 pb-6 pt-3 md:px-6">
         <PrimaryButton onClick={generate} disabled={ingredients.length === 0}>
-          Create my recipe
+          Cook this up ✦
         </PrimaryButton>
       </div>
     </main>

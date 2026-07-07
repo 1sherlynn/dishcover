@@ -43,9 +43,9 @@ Specs, design system, data model, generation contract, glossary, ADRs 0001–000
 - [ ] Client capture: camera/file input, client-side compression, review-chips screen
 - [ ] FAB action wiring (Scan + Type)
 
-## Phase 7 — Themes
-- [ ] Midnight, Market, Playful token sets + per-theme placeholder-art styles
-- [ ] ThemePicker in Settings with live swatches; persistence; AA contrast audit per theme
+## Phase 7 — Themes *(superseded by ADR-0004: Riso is the single art direction)*
+- [x] ~~Midnight, Market, Playful token sets~~ → Riso adopted as the design (Phase 1+2 shipped); Midnight retained for Cooking Mode
+- [ ] Optional later: Riso ink-swap variants + picker, only if wanted post-MVP
 
 ## Phase 8 — Polish & PWA
 - [ ] PWA manifest + icons + installability pass

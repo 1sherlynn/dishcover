@@ -68,6 +68,10 @@ _Avoid_: Step mode, player
 
 ### Presentation
 
+**Riso**:
+Dishcover's art direction: a risograph food-zine look — spot inks on paper, mono type, stamps, stickers, and seeded dish-art illustrations. Defined by the Ink Kit token sheet; supersedes the earlier switchable-themes plan (ADR-0004).
+_Avoid_: Theme (for the overall direction), retro style
+
 **Theme**:
-One of 3–5 switchable visual styles (colors, typography, mood) the user can pick, like IDE themes. Purely cosmetic — it never changes pantry data, preferences, or behavior.
+A named visual token set. Riso is the primary theme; Midnight's tokens are reserved for Cooking Mode. User-switchable themes are out of scope unless Riso ink-swap variants arrive later (ADR-0004).
 _Avoid_: Team, skin, profile

@@ -1,65 +1,62 @@
-# Dishcover — Design System
+# Dishcover — Design System: Riso
 
-A custom token-based system (no off-the-shelf kit). Every Theme is a complete token set; components consume only semantic tokens, never raw values. Unstyled accessible primitives (Radix) may be used underneath where useful (dialog, popover, switch, tabs).
+Dishcover's art direction is **Riso** — a risograph food-zine: spot inks slightly misregistered on warm paper, mono type, rubber stamps, sticker tags, halftone dots, and a page folio on every screen. Source of truth: `reference/claude-design-v1-riso.html` (Claude Design, "Dishcover Riso — Phase 1"). Decision record: ADR-0004.
 
-## Token architecture
+Rollout: **Phase 1 = tokens + Recipe Detail + dish art** (shipped); **Phase 2 = Home, Pantry, Build a Recipe as zine pages** (shipped after sign-off). Cooking Mode stays Midnight. A dedicated Cookbook screen (filter tabs All/Favorites/Quick) exists in the reference and is tracked as its own issue.
 
-CSS custom properties, scoped by `data-theme` on `<html>`:
+## Screens (Phase 2)
 
-```css
-:root[data-theme="hearth"] { --color-bg: #FAF3E8; /* … */ }
-```
+- **Home** — greeting micro-label, `WHAT'S COOKING?` display, plum `+ ADD NEW RECIPE` slab, `IN YOUR PANTRY` dotted-rule section with dashed shelf chips and a `manage →` link, `MADE FOR YOU` with the latest recipe as a featured wide card (`LATEST` sticker) above the grid, folio `PG. 01`.
+- **Pantry** — `THE PANTRY` display title, mono intro, boxed input with plum `+`, `ON THE SHELF` dotted rule with item count, solid-border chips with ink `×` boxes, `QUICK ADD` dashed chips with plum `+`, folio `PG. 02`.
+- **Build a Recipe** — `INGREDIENTS` label with the Type/Dictate/Scan segmented row (unbuilt modes render dimmed), boxed input, dashed suggestion chips, `MACRO TARGET` panel on teal wash (pop label tab, preset chips, boxed gram fields, Caveat aside), folio `PG. 04`, plum `COOK THIS UP ✦` slab. Meal Settings (guests/time/cuisine) and the allow-other toggle join this screen via issue #4 using the reference's boxed-stepper and dashed-chip patterns.
 
-Semantic tokens (the full contract — every theme must define all of these):
+## The Ink Kit (tokens)
 
-| Token | Role |
-|---|---|
-| `--color-bg` | App background |
-| `--color-surface` | Cards, sheets |
-| `--color-surface-alt` | Nested/tinted panels (e.g. step cards) |
-| `--color-ink` | Primary text |
-| `--color-ink-soft` | Secondary text |
-| `--color-accent` | Primary actions, FAB |
-| `--color-accent-ink` | Text/icon on accent |
-| `--color-highlight` | Hearts, active chips, progress fill |
-| `--color-positive / --color-warn / --color-danger` | Macro on-target / near / far; errors |
-| `--radius-card / --radius-control` | Card and button/chip rounding |
-| `--shadow-card` | Elevation style |
-| `--font-display / --font-body` | Type pairing |
-| `--motion-speed` | Base transition duration multiplier |
+Foundations: **Ink** `#2E2620` · **Paper** `#FAF3E3` · **Pop** `#4E74B8` (blueberry).
 
-Tailwind maps utilities to these variables (e.g. `bg-surface`, `text-ink`, `rounded-card`); no hex values in component code. Nutrition bar colors derive from `--color-positive/warn/danger` by distance-to-target bands (within 10% / within 25% / beyond).
+Spot inks (each has a 50→900 scale in the reference; the app uses these working values):
 
-## The four Themes
+| Ink | Value | Used for |
+|---|---|---|
+| Teal | `#1E958A` | quantities, macros-protein, serve steppers, hand annotations |
+| Mustard | `#E3A21E` | art frames, macros-carbs, warn band, timers |
+| Moss | `#6F9A4E` | macros-fat, positive band |
+| Blueberry | `#4E74B8` | pop accents, links |
+| Plum | `#B85F87` | CTAs, stickers, favorites, selected chips |
 
-### Hearth — default (Crumb-familiar)
-Warm, organic, gentle. bg `#FAF3E8` cream · surface `#FFFFFF` · surface-alt `#F5E9D9` · ink `#2E4633` deep olive · ink-soft `#B98A6F` dusty clay · accent `#F5A83C` amber (ink `#3A2E15`) · highlight `#E8542F` tomato. Radii 24/999px (pill controls) · soft diffuse shadows · display **Fraunces** (warm serif), body **Nunito Sans** · placeholder art: hand-drawn ingredient doodles on cream blobs.
+Semantic token mapping (CSS variables on `:root[data-theme="riso"]`; the contract from the original system is preserved so all components keep working):
 
-### Midnight — dark, candlelit
-Calm evening kitchen; also the permanent Cooking Mode palette. bg `#1C271F` · surface `#26342A` · surface-alt `#31423630` tint · ink `#F2EDE3` · ink-soft `#A8B5A0` · accent `#D9906F` terracotta (ink `#231512`) · highlight `#E8B14E` candle gold. Radii 20/999px · shadows near-none, borders `#3A4A3E` · display **Fraunces**, body **Inter** · placeholder art: engraved-style line illustrations in gold on deep green.
+`--th-bg` paper · `--th-surface` lighter paper `#FDF8EC` · `--th-surface-alt` deep paper `#F1E6CC` · `--th-ink` ink · `--th-ink-soft` `#6A5F4F` · `--th-accent` plum (ink-on-accent: paper) · `--th-highlight` teal · `--th-positive` moss · `--th-warn` mustard · `--th-danger` `#BE4B33` · `--th-radius-card` 4px · `--th-radius-control` 2px · `--th-shadow-card` hard offset `6px 6px 0 rgba(46,38,32,0.14)`.
 
-### Market — fresh, crisp, airy
-Farmers-market morning. bg `#FFFFFF` · surface `#F6F8F5` · surface-alt `#EEF3EC` · ink `#1F2937` · ink-soft `#6B7280` · accent `#16A34A` produce green (ink `#FFFFFF`) · highlight `#F97316` carrot. Radii 12/10px (squarer) · hairline borders `#E5E7EB`, minimal shadow · display **Sora**, body **Inter** · placeholder art: flat geometric produce shapes on white.
+Riso-specific additions to the contract: `--th-wash` (teal panel wash `#DDEFE8`), `--th-frame` (mustard), `--th-pop` (blueberry), `--font-hand` (Caveat).
 
-### Playful — bold citrus energy
-Crumb's orange dictate screen turned into a whole personality. bg `#FFF4E0` · surface `#FFFFFF` · surface-alt `#FFE3B3` · ink `#33230F` · ink-soft `#8A6B44` · accent `#FF8A00` (ink `#FFFFFF`) · highlight `#F43F5E`. Radii 28/999px, chunky 2px borders `#33230F`, hard offset shadows (`4px 4px 0`) · display **Bricolage Grotesque** (chunky), body **Nunito** · placeholder art: sticker-style emoji-scale food icons.
+**Midnight** tokens survive unchanged for Cooking Mode (`.force-midnight`). Hearth/Market/Playful are retired (ADR-0004).
 
-Fonts self-hosted via `next/font` (no external requests at runtime).
+## Type
 
-## Component inventory
+Trio, scale ×1.25 (from the Ink Kit sheet):
 
-Layout: AppShell (header, safe-area, max-width column) · BottomFAB with expanding action menu.
-Inputs: Chip (selectable/removable) · ChipGroup · IngredientInput (autocomplete + chips) · Stepper (−/n/+) · MacroPresetPicker (chips → 3 gram fields) · Toggle · Select sheet.
-Content: RecipeCard · RecipeGrid · PlaceholderArt (theme-aware, seeded by recipe id) · TagChip · MetaRow (time/kcal/difficulty) · Tabs · IngredientRow · StepCard · NutrientBar (target vs actual) · NutrientTable · EstimatedBadge.
-Flow: GeneratingScreen · CookStep (progress segments, TimerControl) · ThemePicker (swatch cards) · EmptyState · ErrorState/Toast.
+- **Bricolage Grotesque** — display/headers, heavy, often uppercase. DISPLAY 40 / H1 33 / H2 26.
+- **Courier Prime** — body & UI text, mono. BODY 16 / MICRO 11 (uppercase, letterspaced for labels).
+- **Caveat** — hand-written annotations only ("don't crowd the pan!"), teal ink, sparing.
 
-## Responsive rules
+## Morphology
 
-- Design at 390px; single column, thumb-reach CTAs, FAB bottom-right.
-- ≥768px: app column centered at 640px; recipe grid 2-up → 3-up ≥1024px; FAB becomes inline "New recipe" button in header.
-- Cooking Mode is always full-viewport regardless of breakpoint.
-- Touch targets ≥44px; body text ≥16px; contrast AA on all token pairs (verify per theme).
+- **Borders carry the design**: 2px solid ink on interactive elements; dashed ink borders for add/suggestion chips and stamps; dotted leaders between label and value.
+- **Shadows are print offsets**, never blurs: pages `6px 6px 0` translucent ink; primary buttons solid ink offset.
+- **Corners near-square** (2–4px).
+- **Zine chrome**: every screen is a zine page — header `DISHCOVER ZINE · No.NN` (mono micro), footer folio `✳ DISHCOVER … PG. NN`.
+- **Stamps & stickers**: rubber-stamp boxes (dashed border, mono uppercase, slight rotation, e.g. `SERVES 2 ✓`); sticker tags (plum block, paper text, rotated ~-3°, e.g. `FRESH`).
+- **Halftone / grain / overprint**: paper grain overlay app-wide; halftone dot patterns inside dish art; spot fills sit 2–3px misregistered from their ink outlines.
 
-## Motion
+## Dish art
 
-Subtle spring on FAB expansion and tab underline; 150–250ms fades elsewhere; skeleton shimmer on the recipe grid. All gated by `prefers-reduced-motion` and scaled by `--motion-speed` (Playful runs snappier, Midnight slower).
+Seeded riso illustrations (no photos, no AI images — consistent with the placeholder-art decision). Four archetypes: bowl-with-chopsticks, plated-fillet, sesame bowl, steak-and-fries. Ink outlines with hand wobble, spot-color fills misregistered, halftone dots, steam squiggles. Deterministic from `artSeed`; framed in a mustard dotted double frame on Recipe Detail.
+
+## Recipe Detail (Phase 1 reference)
+
+Single scrolling zine page (no tabs): framed dish art with sticker tag + `SERVES n ✓` stamp → uppercase Bricolage title → ticket-stub meta row (TIME / KCAL / LEVEL as dashed stubs on a pale-gold strip) → **MACROS · PER SERVING** panel on teal wash (kcal donut in spot inks; per-macro rows with square swatches and `42g / 40g` target values; Caveat verdict line when a Macro Target was set) → serves stepper (−/+ ink boxes, + teal) → ingredients with dotted leaders (mono name left, teal Bricolage quantity right, `TO BUY` stamp when applicable) → steps as ink-bordered cards → micronutrient dotted list with an `~ ESTIMATED` stamp.
+
+## Motion & responsiveness
+
+Rise/stagger entrances and reduced-motion rules unchanged. Layout rules unchanged (mobile-first 390px, centered 640px column, grid widening at ≥768/1024px). Lighthouse and contrast targets unchanged — ink on paper clears AA everywhere; check plum-on-paper for small text (use ink for body, plum for display-size only).
