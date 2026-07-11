@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Chip, PrimaryButton } from "@/components/ui";
 import { MacroPresetPicker } from "@/components/MacroPresetPicker";
+import {
+  MealSettingsPicker,
+  AllowOtherToggle,
+  type MealSettings,
+} from "@/components/MealSettingsPicker";
 import { generateRecipe, type GenerationError } from "@/lib/generate-recipe";
 import type { MacroTarget } from "@/lib/schemas";
 
@@ -26,6 +31,12 @@ export default function NewRecipePage() {
   const router = useRouter();
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [macroTarget, setMacroTarget] = useState<MacroTarget | undefined>(undefined);
+  const [mealSettings, setMealSettings] = useState<MealSettings>({
+    guests: 2,
+    time: "medium",
+    cuisine: "any",
+  });
+  const [allowOtherIngredients, setAllowOtherIngredients] = useState(false);
   const [draft, setDraft] = useState("");
   const [phase, setPhase] = useState<"form" | "generating">("form");
   const [error, setError] = useState<GenerationError | null>(null);
@@ -48,7 +59,12 @@ export default function NewRecipePage() {
       () => setLineIdx((i) => (i + 1) % SIMMER_LINES.length),
       2600
     );
-    const result = await generateRecipe({ capturedIngredients: ingredients, macroTarget });
+    const result = await generateRecipe({
+      capturedIngredients: ingredients,
+      macroTarget,
+      mealSettings,
+      allowOtherIngredients,
+    });
     if (lineTimer.current) clearInterval(lineTimer.current);
     if (result.ok) {
       router.push(`/recipe/${result.recipe.id}`);
@@ -109,7 +125,19 @@ export default function NewRecipePage() {
         </p>
       )}
 
-      <section className="rise" style={{ "--rise-delay": "80ms" } as React.CSSProperties}>
+      <section
+        className="rise relative border-2 border-ink bg-surface p-5 shadow-card"
+        style={{ "--rise-delay": "80ms" } as React.CSSProperties}
+      >
+        <span className="zine-label absolute -top-3 left-4 bg-highlight px-2.5 py-1 text-white">
+          Meal Settings
+        </span>
+        <div className="mt-2">
+          <MealSettingsPicker value={mealSettings} onChange={setMealSettings} />
+        </div>
+      </section>
+
+      <section className="rise mt-10" style={{ "--rise-delay": "160ms" } as React.CSSProperties}>
         <h2 className="zine-label">Ingredients</h2>
         <div className="mt-3 grid grid-cols-3 gap-2">
           <span className="grid place-items-center border-2 border-ink bg-accent px-2 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-accent-ink">
@@ -177,11 +205,15 @@ export default function NewRecipePage() {
             </Chip>
           ))}
         </div>
+
+        <div className="mt-6">
+          <AllowOtherToggle on={allowOtherIngredients} onChange={setAllowOtherIngredients} />
+        </div>
       </section>
 
       <section
         className="rise relative mt-10 border-2 border-ink bg-wash p-5 shadow-card"
-        style={{ "--rise-delay": "160ms" } as React.CSSProperties}
+        style={{ "--rise-delay": "240ms" } as React.CSSProperties}
       >
         <span className="zine-label absolute -top-3 left-4 bg-pop px-2.5 py-1 text-white">
           Macro Target

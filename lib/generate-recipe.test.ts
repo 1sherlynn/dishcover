@@ -83,6 +83,19 @@ describe("buildGenerateRequest (internal seam)", () => {
     expect(req.allowOtherIngredients).toBe(false);
   });
 
+  it("passes chosen Meal Settings and allowOtherIngredients through unchanged", () => {
+    const req = buildGenerateRequest(
+      {
+        capturedIngredients: ["eggs"],
+        mealSettings: { guests: 6, time: "fast", cuisine: "asian" },
+        allowOtherIngredients: true,
+      },
+      { pantry: [], dietary: [], avoidList: [], equipment: [] }
+    );
+    expect(req.mealSettings).toEqual({ guests: 6, time: "fast", cuisine: "asian" });
+    expect(req.allowOtherIngredients).toBe(true);
+  });
+
   it("omits a Macro Target with no positive values", () => {
     const req = buildGenerateRequest(
       { capturedIngredients: ["eggs"], macroTarget: {} },
@@ -131,6 +144,21 @@ describe("generateRecipe", () => {
     expect(sent.dietary).toEqual(["vegan"]);
     expect(sent.avoidList).toEqual(["cilantro", "peanuts"]);
     expect(sent.equipment).toEqual(["stove", "air fryer"]);
+  });
+
+  it("carries Meal Settings and allowOtherIngredients on the wire", async () => {
+    stubFetchOk(sampleGenerated());
+
+    const result = await generateRecipe({
+      capturedIngredients: ["eggs"],
+      mealSettings: { guests: 4, time: "long", cuisine: "italian" },
+      allowOtherIngredients: true,
+    });
+
+    expect(result.ok).toBe(true);
+    const sent = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    expect(sent.mealSettings).toEqual({ guests: 4, time: "long", cuisine: "italian" });
+    expect(sent.allowOtherIngredients).toBe(true);
   });
 
   it("does not attach a macroTarget key when none was set", async () => {
