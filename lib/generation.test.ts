@@ -106,6 +106,30 @@ describe("runGeneration", () => {
     expect(calls()).toBe(2);
   });
 
+  it("requests an explicit output budget sized for reasoning + a full recipe", async () => {
+    // gpt-oss on Groq spends hidden reasoning tokens from the completion
+    // budget; without an explicit maxOutputTokens the JSON truncates
+    // (finishReason 'length') and every request 502s.
+    const recipe = mockRecipe(baseRequest());
+    let budget: number | undefined;
+    const model = new MockLanguageModelV2({
+      doGenerate: async (options) => {
+        budget = options.maxOutputTokens;
+        return {
+          finishReason: "stop" as const,
+          usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+          content: [{ type: "text" as const, text: JSON.stringify(recipe) }],
+          warnings: [],
+        };
+      },
+    });
+    await runGeneration(baseRequest(), model);
+    expect(budget).toBeGreaterThanOrEqual(4096);
+    // ...but small enough that prompt + budget clears Groq's free-tier
+    // 8000 TPM pre-check (it counts maxOutputTokens, not actual usage).
+    expect(budget).toBeLessThanOrEqual(6500);
+  });
+
   it("throws GenerationFailedError after two invalid attempts", async () => {
     const { model, calls } = textModel(["nope", "still nope"]);
     await expect(runGeneration(baseRequest(), model)).rejects.toBeInstanceOf(

@@ -97,6 +97,12 @@ export async function runGeneration(
       const { object } = await generateObject({
         model,
         schema: GeneratedRecipeSchema,
+        // Reasoning models (gpt-oss on Groq) spend hidden reasoning tokens
+        // from this budget before emitting JSON; the provider default is too
+        // small and truncates the recipe mid-payload (finishReason 'length').
+        // Ceiling: Groq's free tier pre-checks prompt + maxOutputTokens
+        // against an 8000 TPM limit, so this plus the prompt must stay under.
+        maxOutputTokens: 6000,
         system,
         prompt:
           attempt === 0
