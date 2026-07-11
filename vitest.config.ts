@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, configDefaults } from "vitest/config";
 import path from "node:path";
 
 export default defineConfig({
@@ -8,5 +8,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
+    // Background-agent worktrees are full repo copies — don't sweep their tests.
+    exclude: [...configDefaults.exclude, "**/.claude/**"],
   },
 });
