@@ -26,16 +26,18 @@ let generateRecipe: typeof import("./generate-recipe").generateRecipe;
 let buildGenerateRequest: typeof import("./generate-recipe").buildGenerateRequest;
 let useRecipeStore: typeof import("./store").useRecipeStore;
 let usePantryStore: typeof import("./store").usePantryStore;
+let usePrefsStore: typeof import("./store").usePrefsStore;
 
 beforeAll(async () => {
   stubLocalStorage();
   ({ generateRecipe, buildGenerateRequest } = await import("./generate-recipe"));
-  ({ useRecipeStore, usePantryStore } = await import("./store"));
+  ({ useRecipeStore, usePantryStore, usePrefsStore } = await import("./store"));
 });
 
 beforeEach(() => {
   useRecipeStore.setState({ recipes: [] });
   usePantryStore.setState({ pantry: [] });
+  usePrefsStore.setState({ dietary: [], avoidList: [], equipment: [] });
 });
 
 afterEach(() => {
@@ -57,15 +59,26 @@ describe("buildGenerateRequest (internal seam)", () => {
   it("combines per-generation choices with standing inputs", () => {
     const req = buildGenerateRequest(
       { capturedIngredients: ["chicken breast"], macroTarget: { proteinG: 45 } },
-      { pantry: ["olive oil", "salt"] }
+      {
+        pantry: ["olive oil", "salt"],
+        dietary: ["vegan"],
+        avoidList: ["cilantro"],
+        equipment: ["stove", "oven"],
+      }
     );
     expect(req.capturedIngredients).toEqual(["chicken breast"]);
     expect(req.pantry).toEqual(["olive oil", "salt"]);
+    expect(req.dietary).toEqual(["vegan"]);
+    expect(req.avoidList).toEqual(["cilantro"]);
+    expect(req.equipment).toEqual(["stove", "oven"]);
     expect(req.macroTarget).toEqual({ proteinG: 45 });
   });
 
   it("fills Meal Settings defaults and allowOtherIngredients=false", () => {
-    const req = buildGenerateRequest({ capturedIngredients: ["eggs"] }, { pantry: [] });
+    const req = buildGenerateRequest(
+      { capturedIngredients: ["eggs"] },
+      { pantry: [], dietary: [], avoidList: [], equipment: [] }
+    );
     expect(req.mealSettings).toEqual({ guests: 2, time: "medium", cuisine: "any" });
     expect(req.allowOtherIngredients).toBe(false);
   });
@@ -73,7 +86,7 @@ describe("buildGenerateRequest (internal seam)", () => {
   it("omits a Macro Target with no positive values", () => {
     const req = buildGenerateRequest(
       { capturedIngredients: ["eggs"], macroTarget: {} },
-      { pantry: [] }
+      { pantry: [], dietary: [], avoidList: [], equipment: [] }
     );
     expect(req.macroTarget).toBeUndefined();
   });
@@ -101,6 +114,23 @@ describe("generateRecipe", () => {
     // standing input (Pantry) went out on the wire
     const sent = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
     expect(sent.pantry).toEqual(["olive oil"]);
+  });
+
+  it("carries standing preferences (dietary / avoid / equipment) on the wire", async () => {
+    usePrefsStore.setState({
+      dietary: ["vegan"],
+      avoidList: ["cilantro", "peanuts"],
+      equipment: ["stove", "air fryer"],
+    });
+    stubFetchOk(sampleGenerated());
+
+    const result = await generateRecipe({ capturedIngredients: ["chicken breast"] });
+
+    expect(result.ok).toBe(true);
+    const sent = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    expect(sent.dietary).toEqual(["vegan"]);
+    expect(sent.avoidList).toEqual(["cilantro", "peanuts"]);
+    expect(sent.equipment).toEqual(["stove", "air fryer"]);
   });
 
   it("does not attach a macroTarget key when none was set", async () => {

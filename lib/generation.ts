@@ -65,7 +65,7 @@ export function buildPrompt(req: GenerateRequest): { system: string; prompt: str
 Rules (non-negotiable):
 1. Build the dish AROUND the captured ingredients — they are the stars.
 2. The pantry list is freely available support. ${req.allowOtherIngredients ? "You may add a FEW extra ingredients beyond captured+pantry, but every extra must have toBuy=true." : "Use ONLY captured ingredients + pantry (plus water). Every ingredient gets toBuy=false."}
-3. NEVER use anything from the avoid list. Honor every dietary preference strictly.
+3. NEVER use anything from the avoid list. Honor every dietary preference strictly — it outranks rule 1: if a captured ingredient conflicts with a dietary preference or the avoid list, SUBSTITUTE a compliant alternative that keeps the spirit of the dish. Never refuse to generate.
 4. Require no equipment beyond what the user owns${req.equipment.length ? "" : " (assume a basic stove + oven kitchen)"}.
 5. Every ingredient needs a realistic grams equivalent (for "2 tbsp olive oil", grams=27).
 6. Per-serving nutrition must be self-consistent: kcal within ±10% of 4·proteinG + 4·carbsG + 9·fatG. Estimate micronutrients honestly.

@@ -74,6 +74,52 @@ export const usePantryStore = create<PantryState>()(
   )
 );
 
+// Standing preferences (CONTEXT.md): Dietary Preference, Avoid List,
+// Equipment — they join every Generation Request via the Generation Client.
+// `theme` is reserved in the persisted shape (docs/DATA-MODEL.md) for a
+// later issue; nothing reads it yet.
+
+interface PrefsState {
+  dietary: string[]; // from the fixed Dietary Preference chip set
+  avoidList: string[]; // free text, canonical lowercase
+  equipment: string[]; // from the fixed Equipment chip set
+  theme: string;
+  toggleDietary: (name: string) => void;
+  toggleEquipment: (name: string) => void;
+  addAvoid: (name: string) => void;
+  removeAvoid: (name: string) => void;
+}
+
+const toggle = (list: string[], name: string) =>
+  list.includes(name) ? list.filter((x) => x !== name) : [...list, name];
+
+export const usePrefsStore = create<PrefsState>()(
+  persist(
+    (set) => ({
+      dietary: [],
+      avoidList: [],
+      equipment: [],
+      theme: "riso",
+      toggleDietary: (name) => set((s) => ({ dietary: toggle(s.dietary, name) })),
+      toggleEquipment: (name) =>
+        set((s) => ({ equipment: toggle(s.equipment, name) })),
+      addAvoid: (name) =>
+        set((s) => {
+          const clean = name.trim().toLowerCase();
+          if (!clean || s.avoidList.includes(clean)) return s;
+          return { avoidList: [...s.avoidList, clean] };
+        }),
+      removeAvoid: (name) =>
+        set((s) => ({ avoidList: s.avoidList.filter((x) => x !== name) })),
+    }),
+    {
+      name: "dishcover.prefs.v1",
+      version: 1,
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
+
 /** Gate for store-driven UI so SSR markup never mismatches localStorage. */
 import { useSyncExternalStore } from "react";
 const subscribeNoop = () => () => {};

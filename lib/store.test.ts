@@ -50,14 +50,16 @@ function makeRecipe(id: string, favorite = false): Recipe {
 }
 
 let useRecipeStore: typeof import("./store").useRecipeStore;
+let usePrefsStore: typeof import("./store").usePrefsStore;
 
 beforeAll(async () => {
   stubLocalStorage();
-  ({ useRecipeStore } = await import("./store"));
+  ({ useRecipeStore, usePrefsStore } = await import("./store"));
 });
 
 beforeEach(() => {
   useRecipeStore.setState({ recipes: [] });
+  usePrefsStore.setState({ dietary: [], avoidList: [], equipment: [] });
 });
 
 describe("recipe store", () => {
@@ -98,5 +100,56 @@ describe("recipe store", () => {
     // favorite survived even though it was oldest; oldest NON-favorite (r0) evicted
     expect(recipes.some((r) => r.id === "keeper")).toBe(true);
     expect(recipes.some((r) => r.id === "r0")).toBe(false);
+  });
+});
+
+describe("prefs store", () => {
+  it("starts empty with the theme field reserved", () => {
+    const s = usePrefsStore.getState();
+    expect(s.dietary).toEqual([]);
+    expect(s.avoidList).toEqual([]);
+    expect(s.equipment).toEqual([]);
+    expect(s.theme).toBe("riso"); // shape reserved per DATA-MODEL.md; wired by a later issue
+  });
+
+  it("toggles a dietary preference on and off", () => {
+    usePrefsStore.getState().toggleDietary("vegan");
+    expect(usePrefsStore.getState().dietary).toEqual(["vegan"]);
+    usePrefsStore.getState().toggleDietary("gluten-free");
+    expect(usePrefsStore.getState().dietary).toEqual(["vegan", "gluten-free"]);
+    usePrefsStore.getState().toggleDietary("vegan");
+    expect(usePrefsStore.getState().dietary).toEqual(["gluten-free"]);
+  });
+
+  it("toggles equipment on and off", () => {
+    usePrefsStore.getState().toggleEquipment("air fryer");
+    expect(usePrefsStore.getState().equipment).toEqual(["air fryer"]);
+    usePrefsStore.getState().toggleEquipment("air fryer");
+    expect(usePrefsStore.getState().equipment).toEqual([]);
+  });
+
+  it("canonicalizes avoid entries to trimmed lowercase and dedupes", () => {
+    usePrefsStore.getState().addAvoid("  Cilantro ");
+    usePrefsStore.getState().addAvoid("cilantro");
+    expect(usePrefsStore.getState().avoidList).toEqual(["cilantro"]);
+  });
+
+  it("ignores empty avoid entries", () => {
+    usePrefsStore.getState().addAvoid("   ");
+    expect(usePrefsStore.getState().avoidList).toEqual([]);
+  });
+
+  it("removes an avoid entry", () => {
+    usePrefsStore.getState().addAvoid("peanuts");
+    usePrefsStore.getState().addAvoid("shrimp");
+    usePrefsStore.getState().removeAvoid("peanuts");
+    expect(usePrefsStore.getState().avoidList).toEqual(["shrimp"]);
+  });
+
+  it("persists under dishcover.prefs.v1", () => {
+    usePrefsStore.getState().toggleDietary("vegan");
+    const raw = localStorage.getItem("dishcover.prefs.v1");
+    expect(raw).toBeTruthy();
+    expect(JSON.parse(raw!).state.dietary).toEqual(["vegan"]);
   });
 });

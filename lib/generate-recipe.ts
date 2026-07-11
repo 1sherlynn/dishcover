@@ -7,12 +7,12 @@ import {
   type MacroTarget,
   type Recipe,
 } from "./schemas";
-import { useRecipeStore, usePantryStore } from "./store";
+import { useRecipeStore, usePantryStore, usePrefsStore } from "./store";
 
 // The Generation Client — the one interface every capture surface uses to
 // turn the user's choices into a saved Recipe. It gathers standing inputs
-// (Pantry; Dietary Preferences / Avoid List / Equipment when they land) so
-// callers can't forget them, maps the proxy's error taxonomy
+// (Pantry, Dietary Preferences, Avoid List, Equipment) so callers can't
+// forget them, maps the proxy's error taxonomy
 // (GENERATION-CONTRACT.md) to typed modes, and saves the Recipe before
 // returning. Screens render; this module owns the use case.
 
@@ -27,7 +27,9 @@ export interface PerGenerationInputs {
 /** Standing inputs that join every Generation Request automatically. */
 interface StandingInputs {
   pantry: string[];
-  // dietary / avoidList / equipment join here when the prefs store lands (#3)
+  dietary: string[];
+  avoidList: string[];
+  equipment: string[];
 }
 
 export type GenerationErrorKind =
@@ -87,9 +89,9 @@ export function buildGenerateRequest(
   return {
     capturedIngredients: perGeneration.capturedIngredients,
     pantry: standing.pantry,
-    avoidList: [],
-    dietary: [],
-    equipment: [],
+    avoidList: standing.avoidList,
+    dietary: standing.dietary,
+    equipment: standing.equipment,
     mealSettings: perGeneration.mealSettings ?? {
       guests: 2,
       time: "medium",
@@ -103,7 +105,8 @@ export function buildGenerateRequest(
 }
 
 function gatherStandingInputs(): StandingInputs {
-  return { pantry: usePantryStore.getState().pantry };
+  const { dietary, avoidList, equipment } = usePrefsStore.getState();
+  return { pantry: usePantryStore.getState().pantry, dietary, avoidList, equipment };
 }
 
 export async function generateRecipe(

@@ -65,7 +65,9 @@ interface Preferences {
   dietary: string[];           // from the fixed Dietary Preference chip set
   avoidList: string[];         // free text, canonical lowercase
   equipment: string[];         // from the fixed Equipment chip set
-  theme: "hearth" | "midnight" | "market" | "playful";
+  theme: string;               // reserved; "riso" since ADR-0004 retired the
+                               // original four themes — values TBD by the
+                               // future theme issue
 }
 
 type Pantry = string[];        // ingredient names, canonical lowercase

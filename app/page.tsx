@@ -34,12 +34,21 @@ export default function HomePage() {
 
   return (
     <main>
-      <header className="rise flex items-baseline justify-between">
+      <header className="rise flex items-center justify-between">
         <Link href="/" className="flex items-baseline gap-0.5" aria-label="Dishcover home">
           <span className="font-display text-2xl font-bold tracking-tight">Dishcover</span>
           <span aria-hidden className="h-2 w-2 translate-y-[-2px] rounded-full bg-accent" />
         </Link>
-        <span className="zine-label text-ink-soft">Dishcover Zine · No.07</span>
+        <div className="flex items-center gap-3">
+          <span className="zine-label text-ink-soft">Dishcover Zine · No.07</span>
+          <Link
+            href="/settings"
+            aria-label="Settings"
+            className="grid h-9 w-9 place-items-center rounded-control border-2 border-ink bg-surface text-base transition-transform active:translate-y-0.5"
+          >
+            ⚙
+          </Link>
+        </div>
       </header>
 
       <section className="rise mt-8" style={{ "--rise-delay": "50ms" } as React.CSSProperties}>

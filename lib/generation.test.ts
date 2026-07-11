@@ -46,6 +46,14 @@ describe("buildPrompt (internal seam — the Generator's rules)", () => {
     expect(prompt).toContain("vegan");
   });
 
+  it("orders substitution when a captured ingredient conflicts with the rules", () => {
+    // Acceptance (#3): vegan + chicken-only capture still yields a vegan
+    // recipe — the model substitutes, soft behavior, no refusal.
+    const { system } = buildPrompt(baseRequest({ dietary: ["vegan"] }));
+    expect(system).toMatch(/substitute/i);
+    expect(system).toMatch(/never refuse/i);
+  });
+
   it("restricts to captured + pantry when Allow Other Ingredients is off", () => {
     const { system } = buildPrompt(baseRequest({ allowOtherIngredients: false }));
     expect(system).toMatch(/ONLY captured ingredients \+ pantry/);
