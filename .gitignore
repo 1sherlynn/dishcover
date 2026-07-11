@@ -4,3 +4,15 @@ node_modules/
 .vercel/
 .DS_Store
 tsconfig.tsbuildinfo
+
+# eval reports (issue #7) — regenerated per run, never committed
+/eval-output/
+
+# /teach course workspace (agent skills course) — local learning material, not app code
+/MISSION.md
+/RESOURCES.md
+/NOTES.md
+/lessons/
+/assets/
+/learning-records/
+/reference/skill-map.html

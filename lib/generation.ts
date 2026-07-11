@@ -69,7 +69,7 @@ Rules (non-negotiable):
 4. Require no equipment beyond what the user owns${req.equipment.length ? "" : " (assume a basic stove + oven kitchen)"}.
 5. Every ingredient needs a realistic grams equivalent (for "2 tbsp olive oil", grams=27).
 6. Per-serving nutrition must be self-consistent: kcal within ±10% of 4·proteinG + 4·carbsG + 9·fatG. Estimate micronutrients honestly.
-7. ${macro ? `Aim close to the per-serving macro target (${macro}) with plausible food — never pad with unrealistic quantities. It is a soft target.` : "No macro target was set — just make it balanced and delicious."}
+7. ${macro ? `Aim close to the per-serving macro target (${macro}) with plausible food — never pad with unrealistic quantities. Close means from both sides: to overshoot a macro is as much a miss as to undershoot it. If the available ingredients cannot plausibly reach a macro, land on the closest plausible value. It is a soft target.` : "No macro target was set — just make it balanced and delicious."}
 8. Respect the time budget. Add timerSeconds only to steps with a real wait/cook duration.
 9. Write ingredient names in canonical lowercase. The recipe title is in Title Case. Steps get short imperative titles.`;
 
@@ -85,7 +85,12 @@ Servings: ${req.mealSettings.guests} · Time budget: ${time} · Cuisine: ${req.m
   return { system, prompt };
 }
 
-export async function runGeneration(
+/**
+ * The attempts loop without the kcal correction — what the model actually
+ * said. The adherence eval (#7) scores this; product code wants
+ * runGeneration.
+ */
+export async function runGenerationRaw(
   request: GenerateRequest,
   model: LanguageModel
 ): Promise<GeneratedRecipe> {
@@ -110,11 +115,19 @@ export async function runGeneration(
             : `${prompt}\n\nYour previous attempt failed schema validation. Follow the schema exactly.`,
       });
 
-      object.nutrition.perServing = applyKcalConsistency(object.nutrition.perServing);
       return object;
     } catch (err) {
       lastError = err;
     }
   }
   throw new GenerationFailedError(lastError);
+}
+
+export async function runGeneration(
+  request: GenerateRequest,
+  model: LanguageModel
+): Promise<GeneratedRecipe> {
+  const object = await runGenerationRaw(request, model);
+  object.nutrition.perServing = applyKcalConsistency(object.nutrition.perServing);
+  return object;
 }

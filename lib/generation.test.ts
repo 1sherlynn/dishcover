@@ -10,11 +10,14 @@ import { kcalFromMacros } from "./nutrition";
 // model seam real (ADR-0003).
 
 let runGeneration: typeof import("./generation").runGeneration;
+let runGenerationRaw: typeof import("./generation").runGenerationRaw;
 let buildPrompt: typeof import("./generation").buildPrompt;
 let GenerationFailedError: typeof import("./generation").GenerationFailedError;
 
 beforeAll(async () => {
-  ({ runGeneration, buildPrompt, GenerationFailedError } = await import("./generation"));
+  ({ runGeneration, runGenerationRaw, buildPrompt, GenerationFailedError } = await import(
+    "./generation"
+  ));
 });
 
 const baseRequest = (overrides: object = {}) =>
@@ -71,6 +74,14 @@ describe("buildPrompt (internal seam — the Generator's rules)", () => {
     expect(system).toContain("45g");
   });
 
+  it("demands two-sided adherence: overshooting a macro is also a miss", () => {
+    // Eval finding (#7 baseline): protein landed up to +48% OVER target —
+    // "aim close" alone reads as a floor. The rule must name the overshoot.
+    const { system } = buildPrompt(baseRequest({ macroTarget: { proteinG: 45 } }));
+    expect(system).toMatch(/overshoot/i);
+    expect(system).toMatch(/closest plausible|as close as/i);
+  });
+
   it("maps the fast time budget to under 20 minutes", () => {
     const { prompt } = buildPrompt(
       baseRequest({ mealSettings: { guests: 2, time: "fast", cuisine: "any" } })
@@ -96,6 +107,16 @@ describe("runGeneration", () => {
     expect(result.nutrition.perServing.kcal).toBe(
       Math.round(kcalFromMacros(recipe.nutrition.perServing))
     );
+  });
+
+  it("raw variant preserves the model's stated kcal for the adherence eval", async () => {
+    // The eval measures rule-6 self-consistency; runGeneration's correction
+    // would make that metric structurally unable to fail.
+    const recipe = mockRecipe(baseRequest());
+    recipe.nutrition.perServing.kcal = 9999;
+    const { model } = textModel([JSON.stringify(recipe)]);
+    const result = await runGenerationRaw(baseRequest(), model);
+    expect(result.nutrition.perServing.kcal).toBe(9999);
   });
 
   it("retries once after an invalid payload, then succeeds", async () => {
