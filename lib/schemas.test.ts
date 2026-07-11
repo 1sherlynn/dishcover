@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { GenerateRequestSchema, GeneratedRecipeSchema } from "./schemas";
+import {
+  GenerateRequestSchema,
+  GeneratedRecipeSchema,
+  RecipeStepSchema,
+} from "./schemas";
 import { mockRecipe } from "./mock-recipe";
 
 describe("GenerateRequestSchema", () => {
@@ -37,7 +41,56 @@ describe("GenerateRequestSchema", () => {
   });
 });
 
+describe("RecipeStepSchema", () => {
+  it("normalizes a null timerSeconds to undefined (model says 'no timer')", () => {
+    const parsed = RecipeStepSchema.parse({
+      title: "Rest the chicken",
+      body: "Let it sit off the heat.",
+      timerSeconds: null,
+    });
+    expect(parsed.timerSeconds).toBeUndefined();
+  });
+
+  it("keeps accepting an omitted timerSeconds", () => {
+    const parsed = RecipeStepSchema.parse({
+      title: "Plate up",
+      body: "Divide between bowls.",
+    });
+    expect(parsed.timerSeconds).toBeUndefined();
+  });
+
+  it("keeps a real timer value intact", () => {
+    const parsed = RecipeStepSchema.parse({
+      title: "Simmer the sauce",
+      body: "Low heat, lid off.",
+      timerSeconds: 600,
+    });
+    expect(parsed.timerSeconds).toBe(600);
+  });
+
+  it("still rejects a non-positive timer", () => {
+    expect(
+      RecipeStepSchema.safeParse({
+        title: "Simmer",
+        body: "Low heat.",
+        timerSeconds: 0,
+      }).success
+    ).toBe(false);
+  });
+});
+
 describe("GeneratedRecipeSchema", () => {
+  it("accepts a recipe whose steps carry timerSeconds: null", () => {
+    const recipe = mockRecipe(
+      GenerateRequestSchema.parse({ capturedIngredients: ["eggs"] })
+    );
+    const withNullTimers = {
+      ...recipe,
+      steps: recipe.steps.map((s) => ({ timerSeconds: null, ...s })),
+    };
+    expect(GeneratedRecipeSchema.safeParse(withNullTimers).success).toBe(true);
+  });
+
   it("accepts the built-in mock recipe (contract fixture)", () => {
     const recipe = mockRecipe(
       GenerateRequestSchema.parse({ capturedIngredients: ["chicken breast", "spinach"] })

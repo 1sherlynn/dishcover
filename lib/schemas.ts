@@ -21,11 +21,14 @@ export const RecipeIngredientSchema = z.object({
 export const RecipeStepSchema = z.object({
   title: z.string().min(1).describe("short imperative title, e.g. 'Cook the chicken'"),
   body: z.string().min(1),
+  // Groq models emit `null` for steps without a timer; treat it as "no timer"
+  // rather than a failed generation.
   timerSeconds: z
     .number()
     .int()
     .positive()
-    .optional()
+    .nullish()
+    .transform((v) => v ?? undefined)
     .describe("only when the step has a real wait/cook duration"),
 });
 
