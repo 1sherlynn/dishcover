@@ -8,8 +8,12 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "eval:adherence": "tsx scripts/eval-adherence.ts",
     "sync:dts": "dts-bundle-generator -o .design-sync/types/index.d.ts --project tsconfig.json --no-check .design-sync/entry.ts"
+  },
+  "engines": {
+    "node": ">=24"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.0",
