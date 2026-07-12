@@ -16,3 +16,11 @@ tsconfig.tsbuildinfo
 /assets/
 /learning-records/
 /reference/skill-map.html
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+node_modules/dishcover
+.design-sync/types/
+.design-sync/riso.css

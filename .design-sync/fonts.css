@@ -1,0 +1,40 @@
+/* Brand fonts for the design-sync bundle. The app loads these via next/font
+   (which self-hosts them and sets --font-* variables at runtime); the
+   standalone bundle has no next/font, so we ship the latin-subset woff2 under
+   their plain family names — the exact fallbacks named in every component's
+   font stack (var(--font-bricolage), "Bricolage Grotesque", …). cfg.extraFonts
+   copies the referenced files into fonts/ and folds these rules into the
+   styles.css import closure. Sourced from .next/static/media (next/font cache);
+   latin subset only (English UI). */
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("./fonts-src/bricolage-grotesque-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Courier Prime";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts-src/courier-prime-latin-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Courier Prime";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./fonts-src/courier-prime-latin-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Caveat";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("./fonts-src/caveat-latin.woff2") format("woff2");
+}
