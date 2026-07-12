@@ -115,14 +115,20 @@ Repo-specific gotchas for future syncs. One bullet per issue.
 3. `npx @tailwindcss/cli@4.1.0 -i .design-sync/riso.in.css -o .design-sync/riso.css` (gitignored)
 4. `node .ds-sync/package-build.mjs --config .design-sync/config.json --node-modules ./node_modules --out ./ds-bundle`
 
-## Remaining (upload-side only — all blocked on auth)
-- Upload to Claude Design (finalize_plan → write_files). Needs `/design-login`
-  or "Send to Claude Code Web". Bundle at `ds-bundle/` is validated and ready.
-- Optional: formal per-cell grade JSONs + Playwright render check (visually
-  confirmed already; formal gate matters only at upload time).
+## Status: uploaded (2026-07-12)
+- Auth unblocked via `/design consent` (design-agent access granted for Claude
+  Design projects). `list_projects` came back empty, so this was a fresh
+  first-time sync per the skill's routing rules.
+- Created project **"Dishcover — Riso"** (`projectId` now pinned in
+  `.design-sync/config.json`). Pushed all 9 components in a single batch (the
+  build was already fully verified locally, so no incremental staging was
+  needed) — 62 files, ~1.5 MB (fonts + `_vendor/react.js` are the bulk).
+  `list_files` reconciliation found no orphans (fresh project). `_ds_sync.json`
+  written last, after the sentinel re-arm, per the close-out sequence.
+- Optional follow-up: formal per-cell grade JSONs + Playwright render check
+  (visually confirmed already via `.review.html`; not required for upload).
 
-## Blockers (as of first run, 2026-07-11)
-- **Auth**: `create_project` / all DesignSync writes need design-system
-  authorization unavailable in this headless session. `/design-login` needs an
-  interactive terminal; alternatively use Claude Design's "Send to Claude Code
-  Web". Until then the sync is local-only (no project, no upload).
+## Blockers (RESOLVED 2026-07-12)
+- **Auth**: `create_project` / all DesignSync writes needed design-system
+  authorization unavailable in the 2026-07-11 headless session. Resolved via
+  `/design consent` in the terminal session that ran the full sync.
