@@ -1,0 +1,38 @@
+/* Compiled-CSS input for design-sync: pulls in the app's Tailwind v4 theme
+   (tokens + @theme inline) and materializes the utility classes used by the
+   Riso components. Output → .design-sync/riso.css (cfg.cssEntry). */
+@import "../app/globals.css";
+@source "../components/**/*.{ts,tsx}";
+@source "../app/**/*.{ts,tsx}";
+
+/* Safelist the full semantic palette so the design agent can reach every brand
+   color even where the current components don't use a given utility (Tailwind
+   only emits utilities it sees used). Keeps the conventions-doc vocabulary real. */
+@source inline("{bg,text,border}-{bg,surface,surface-alt,ink,ink-soft,accent,accent-ink,highlight,positive,warn,danger,wash,frame,pop}");
+
+/* The app sets --font-bricolage/-courier/-caveat via next/font at runtime. The
+   standalone bundle has no next/font, so these are undefined — and a font stack
+   like `var(--font-bricolage), "Bricolage Grotesque", …` is INVALIDATED WHOLE
+   by an undefined var() (it does NOT fall through to the next family). Point the
+   vars at the real family names (shipped as @font-face in fonts.css) so every
+   font stack — headings, body, .font-hand, and the .font-display utility below
+   — resolves correctly. */
+:root {
+  --font-bricolage: "Bricolage Grotesque";
+  --font-courier: "Courier Prime";
+  --font-caveat: "Caveat";
+}
+
+/* Tailwind v4 doesn't emit `font-display` / `font-body` family utilities from
+   the `@theme inline` keys (their values reference the next/font `var(--font-*)`
+   custom properties, which aren't resolvable at compile time). The components
+   depend on these classes for display/body type, so define them explicitly with
+   the same stacks the theme uses. In the standalone bundle `--font-bricolage`
+   etc. are undefined, so the browser uses the next named family — which
+   fonts.css ships as @font-face. */
+.font-display {
+  font-family: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
+}
+.font-body {
+  font-family: var(--font-courier), "Courier Prime", ui-monospace, monospace;
+}

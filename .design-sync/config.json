@@ -1,0 +1,16 @@
+{
+  "projectId": "363ffc14-dc2b-4968-a983-c1481b09b99e",
+  "pkg": "dishcover",
+  "globalName": "DishcoverDS",
+  "shape": "package",
+  "srcDir": "components",
+  "tsconfig": ".design-sync/tsconfig.sync.json",
+  "cssEntry": ".design-sync/riso.css",
+  "extraFonts": ".design-sync/fonts.css",
+  "readmeHeader": ".design-sync/conventions.md",
+  "dtsPropsFor": {
+    "NutritionPanel": "recipe: { id: string; createdAt: string; favorite: boolean; artSeed: number; title: string; description: string; tag: string; cuisine: string; difficulty: \"easy\" | \"medium\" | \"hard\"; timeMinutes: number; baseServings: number; ingredients: { name: string; quantity: number; unit: \"g\" | \"ml\" | \"piece\" | \"tbsp\" | \"tsp\" | \"pinch\"; grams: number; toBuy: boolean }[]; steps: { title: string; body: string; timerSeconds?: number }[]; nutrition: { perServing: { kcal: number; proteinG: number; carbsG: number; fatG: number; fiberG: number; sugarG: number; satFatG: number; sodiumMg: number; potassiumMg: number; calciumMg: number; ironMg: number; vitaminCMg: number; vitaminDMcg: number }; estimated: true; macroTarget?: { proteinG?: number; carbsG?: number; fatG?: number } } };",
+    "MacroPresetPicker": "onChange: (target: { proteinG?: number; carbsG?: number; fatG?: number } | undefined) => void;",
+    "MealSettingsPicker": "value: { guests: number; time: \"fast\" | \"medium\" | \"long\"; cuisine: string }; onChange: (next: { guests: number; time: \"fast\" | \"medium\" | \"long\"; cuisine: string }) => void;"
+  }
+}
