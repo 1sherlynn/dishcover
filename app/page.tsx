@@ -95,7 +95,16 @@ export default function HomePage() {
       </section>
 
       <section className="rise mt-10" style={{ "--rise-delay": "150ms" } as React.CSSProperties}>
-        <ZineRule label="Made for you" />
+        <ZineRule
+          label="Made for you"
+          right={
+            hydrated && recipes.length > 0 ? (
+              <Link href="/cookbook" className="text-pop">
+                cookbook →
+              </Link>
+            ) : undefined
+          }
+        />
 
         {hydrated && recipes.length === 0 && (
           <p className="mt-4 border-2 border-dashed border-ink/40 px-6 py-10 text-center font-bold text-ink-soft">
