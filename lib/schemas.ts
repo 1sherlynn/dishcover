@@ -107,3 +107,23 @@ export type GeneratedRecipe = z.infer<typeof GeneratedRecipeSchema>;
 export type Recipe = z.infer<typeof RecipeSchema>;
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
 export type MealSettings = GenerateRequest["mealSettings"];
+
+// Scan (GENERATION-CONTRACT.md POST /api/scan): fridge/pantry photo →
+// reviewed Captured Ingredients.
+
+export const ScanRequestSchema = z.object({
+  image: z.string().min(1).describe("base64 JPEG/WebP, optionally a data: URL"),
+});
+
+export const ScanIngredientSchema = z.object({
+  name: z.string().min(1).describe("canonical lowercase food item name"),
+  confidence: z.enum(["high", "low"]),
+});
+
+export const ScanResultSchema = z.object({
+  ingredients: z.array(ScanIngredientSchema),
+});
+
+export type ScanRequest = z.infer<typeof ScanRequestSchema>;
+export type ScanIngredient = z.infer<typeof ScanIngredientSchema>;
+export type ScanResult = z.infer<typeof ScanResultSchema>;

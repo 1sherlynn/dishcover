@@ -11,6 +11,9 @@ import {
 } from "@/components/MealSettingsPicker";
 import { generateRecipe, type GenerationError } from "@/lib/generate-recipe";
 import { useDraftStore, useHydrated, isDraftNonEmpty } from "@/lib/store";
+import { scanPhoto, type ScanError } from "@/lib/scan-photo";
+import { compressImage } from "@/lib/compress-image";
+import type { ScanIngredient } from "@/lib/schemas";
 
 const SUGGESTIONS = [
   "chicken breast", "eggs", "spinach", "tomatoes", "salmon",
@@ -56,6 +59,12 @@ export default function NewRecipePage() {
     }
   }, [hydrated]);
 
+  const [scanState, setScanState] = useState<"idle" | "scanning" | "reviewing">("idle");
+  const [scanReview, setScanReview] = useState<ScanIngredient[]>([]);
+  const [scanDraft, setScanDraft] = useState("");
+  const [scanError, setScanError] = useState<ScanError | null>(null);
+  const scanInputRef = useRef<HTMLInputElement | null>(null);
+
   const add = (name: string) => {
     const clean = name.trim().toLowerCase();
     if (clean && !ingredients.includes(clean)) {
@@ -69,6 +78,50 @@ export default function NewRecipePage() {
     setDraft("");
     setShowRestored(false);
     setMacroPickerKey((k) => k + 1);
+  };
+
+  const handleScanFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setScanError(null);
+    setScanState("scanning");
+    const photo = await compressImage(file);
+    const result = await scanPhoto(photo);
+    if (result.ok) {
+      setScanReview(result.ingredients);
+      setScanState("reviewing");
+    } else {
+      setScanError(result.error);
+      setScanState("idle");
+    }
+  };
+
+  const removeScanItem = (name: string) => {
+    setScanReview((xs) => xs.filter((i) => i.name !== name));
+  };
+
+  const addManualScanItem = (name: string) => {
+    const clean = name.trim().toLowerCase();
+    if (clean && !scanReview.some((i) => i.name === clean)) {
+      setScanReview((xs) => [...xs, { name: clean, confidence: "high" }]);
+    }
+    setScanDraft("");
+  };
+
+  const cancelScan = () => {
+    setScanReview([]);
+    setScanState("idle");
+  };
+
+  const confirmScan = () => {
+    const merged = [...ingredients];
+    for (const { name } of scanReview) {
+      if (!merged.includes(name)) merged.push(name);
+    }
+    setIngredients(merged);
+    setScanReview([]);
+    setScanState("idle");
   };
 
   const generate = async () => {
@@ -187,16 +240,92 @@ export default function NewRecipePage() {
           >
             ◉ Dictate
           </span>
-          <span
-            className="grid place-items-center border-2 border-ink/30 bg-surface px-2 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-ink-soft/60"
-            title="Coming soon"
+          <button
+            type="button"
+            onClick={() => scanInputRef.current?.click()}
+            disabled={scanState === "scanning"}
+            className="grid place-items-center border-2 border-ink bg-surface px-2 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-ink transition-colors enabled:hover:bg-surface-alt disabled:opacity-60"
           >
-            ⧇ Scan
-          </span>
+            {scanState === "scanning" ? "Reading…" : "⧇ Scan"}
+          </button>
+          <input
+            ref={scanInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
+            aria-label="Scan your fridge"
+            onChange={handleScanFile}
+          />
         </div>
         <p className="mt-2 text-xs font-bold text-ink-soft">
           The stars of your dish — the recipe is built around them.
         </p>
+
+        {scanError && (
+          <p role="alert" className="mt-3 border-2 border-danger bg-surface px-4 py-3 text-sm font-bold text-danger">
+            {scanError.message}
+          </p>
+        )}
+
+        {scanState === "reviewing" && (
+          <div className="mt-4 border-2 border-dashed border-warn bg-surface p-4">
+            <p className="zine-label text-ink-soft">Review scanned ingredients</p>
+            <p className="mt-1 text-xs font-bold text-ink-soft">
+              Low-confidence items are flagged (?) — remove anything that&apos;s wrong.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {scanReview.length === 0 && (
+                <p className="text-xs font-bold text-ink-soft">Nothing left — add one below or cancel.</p>
+              )}
+              {scanReview.map(({ name, confidence }) => (
+                <Chip key={name} flagged={confidence === "low"} onRemove={() => removeScanItem(name)}>
+                  {name}
+                </Chip>
+              ))}
+            </div>
+            <form
+              className="mt-3 flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                addManualScanItem(scanDraft);
+              }}
+            >
+              <input
+                value={scanDraft}
+                onChange={(e) => setScanDraft(e.target.value)}
+                placeholder="ADD MANUALLY…"
+                aria-label="Add a scanned ingredient manually"
+                className="min-w-0 flex-1 border-2 border-ink bg-surface px-4 py-2.5 text-sm font-bold placeholder:text-xs placeholder:font-bold placeholder:uppercase placeholder:tracking-[0.14em] placeholder:text-ink-soft/70 focus:border-accent focus:outline-none"
+              />
+              <button
+                type="submit"
+                aria-label="Add"
+                disabled={!scanDraft.trim()}
+                className="grid h-[42px] w-[42px] shrink-0 place-items-center border-2 border-ink bg-surface text-lg font-bold text-ink transition-transform enabled:active:translate-y-0.5 disabled:opacity-40"
+              >
+                +
+              </button>
+            </form>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={cancelScan}
+                className="flex-1 border-2 border-ink bg-surface px-4 py-2.5 text-sm font-bold uppercase tracking-wide"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmScan}
+                disabled={scanReview.length === 0}
+                className="flex-1 border-2 border-ink bg-accent px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-accent-ink disabled:opacity-40"
+              >
+                Add {scanReview.length} ingredient{scanReview.length === 1 ? "" : "s"}
+              </button>
+            </div>
+          </div>
+        )}
 
         <form
           className="mt-4 flex gap-2"
