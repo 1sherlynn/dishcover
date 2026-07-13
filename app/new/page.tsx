@@ -137,11 +137,13 @@ export default function NewRecipePage() {
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
-                className="absolute rounded-full border-2 border-accent"
-                style={{
-                  inset: `${i * 18}px`,
-                  animation: `simmer 2.4s ease-in-out ${i * 0.4}s infinite`,
-                }}
+                className="simmer absolute rounded-full border-2 border-accent"
+                style={
+                  {
+                    inset: `${i * 18}px`,
+                    "--simmer-delay": `${i * 0.4}s`,
+                  } as React.CSSProperties
+                }
               />
             ))}
             <span className="font-display text-4xl" aria-hidden>🍳</span>
