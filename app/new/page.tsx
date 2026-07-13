@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Chip, PrimaryButton } from "@/components/ui";
@@ -8,12 +8,12 @@ import { MacroPresetPicker } from "@/components/MacroPresetPicker";
 import {
   MealSettingsPicker,
   AllowOtherToggle,
-  type MealSettings,
 } from "@/components/MealSettingsPicker";
 import { generateRecipe, type GenerationError } from "@/lib/generate-recipe";
+import { useDraftStore, useHydrated, isDraftNonEmpty } from "@/lib/store";
 import { scanPhoto, type ScanError } from "@/lib/scan-photo";
 import { compressImage } from "@/lib/compress-image";
-import type { MacroTarget, ScanIngredient } from "@/lib/schemas";
+import type { ScanIngredient } from "@/lib/schemas";
 
 const SUGGESTIONS = [
   "chicken breast", "eggs", "spinach", "tomatoes", "salmon",
@@ -31,19 +31,33 @@ const SIMMER_LINES = [
 
 export default function NewRecipePage() {
   const router = useRouter();
-  const [ingredients, setIngredients] = useState<string[]>([]);
-  const [macroTarget, setMacroTarget] = useState<MacroTarget | undefined>(undefined);
-  const [mealSettings, setMealSettings] = useState<MealSettings>({
-    guests: 2,
-    time: "medium",
-    cuisine: "any",
-  });
-  const [allowOtherIngredients, setAllowOtherIngredients] = useState(false);
+  const hydrated = useHydrated();
+  const ingredients = useDraftStore((s) => s.ingredients);
+  const setIngredients = useDraftStore((s) => s.setIngredients);
+  const macroTarget = useDraftStore((s) => s.macroTarget);
+  const setMacroTarget = useDraftStore((s) => s.setMacroTarget);
+  const mealSettings = useDraftStore((s) => s.mealSettings);
+  const setMealSettings = useDraftStore((s) => s.setMealSettings);
+  const allowOtherIngredients = useDraftStore((s) => s.allowOtherIngredients);
+  const setAllowOtherIngredients = useDraftStore((s) => s.setAllowOtherIngredients);
+  const clearDraft = useDraftStore((s) => s.clearDraft);
   const [draft, setDraft] = useState("");
   const [phase, setPhase] = useState<"form" | "generating">("form");
   const [error, setError] = useState<GenerationError | null>(null);
   const [lineIdx, setLineIdx] = useState(0);
   const lineTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showRestored, setShowRestored] = useState(false);
+  // Bumped once hydration lands (to seed the uncontrolled MacroPresetPicker
+  // with the restored target) and again on manual reset (to clear it).
+  const [macroPickerKey, setMacroPickerKey] = useState(0);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    setMacroPickerKey((k) => k + 1);
+    if (isDraftNonEmpty(useDraftStore.getState())) {
+      setShowRestored(true);
+    }
+  }, [hydrated]);
 
   const [scanState, setScanState] = useState<"idle" | "scanning" | "reviewing">("idle");
   const [scanReview, setScanReview] = useState<ScanIngredient[]>([]);
@@ -54,9 +68,16 @@ export default function NewRecipePage() {
   const add = (name: string) => {
     const clean = name.trim().toLowerCase();
     if (clean && !ingredients.includes(clean)) {
-      setIngredients((xs) => [...xs, clean]);
+      setIngredients([...ingredients, clean]);
     }
     setDraft("");
+  };
+
+  const resetDraft = () => {
+    clearDraft();
+    setDraft("");
+    setShowRestored(false);
+    setMacroPickerKey((k) => k + 1);
   };
 
   const handleScanFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,13 +115,11 @@ export default function NewRecipePage() {
   };
 
   const confirmScan = () => {
-    setIngredients((xs) => {
-      const merged = [...xs];
-      for (const { name } of scanReview) {
-        if (!merged.includes(name)) merged.push(name);
-      }
-      return merged;
-    });
+    const merged = [...ingredients];
+    for (const { name } of scanReview) {
+      if (!merged.includes(name)) merged.push(name);
+    }
+    setIngredients(merged);
     setScanReview([]);
     setScanState("idle");
   };
@@ -121,6 +140,7 @@ export default function NewRecipePage() {
     });
     if (lineTimer.current) clearInterval(lineTimer.current);
     if (result.ok) {
+      clearDraft();
       router.push(`/recipe/${result.recipe.id}`);
     } else {
       setError(result.error);
@@ -167,6 +187,23 @@ export default function NewRecipePage() {
         </Link>
         <h1 className="text-3xl font-extrabold uppercase">Build a recipe</h1>
       </header>
+
+      {showRestored && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="rise mb-4 flex items-center justify-between gap-4 border-2 border-ink bg-surface px-5 py-4 font-bold"
+        >
+          <span>Draft restored — pick up where you left off.</span>
+          <button
+            type="button"
+            onClick={resetDraft}
+            className="shrink-0 text-sm font-bold text-ink-soft underline decoration-dashed underline-offset-4 hover:text-highlight"
+          >
+            Clear draft
+          </button>
+        </p>
+      )}
 
       {error && (
         <p role="alert" className="rise mb-4 border-2 border-danger bg-surface px-5 py-4 font-bold text-danger">
@@ -319,7 +356,7 @@ export default function NewRecipePage() {
             {ingredients.map((name) => (
               <Chip
                 key={name}
-                onRemove={() => setIngredients((xs) => xs.filter((x) => x !== name))}
+                onRemove={() => setIngredients(ingredients.filter((x) => x !== name))}
               >
                 {name}
               </Chip>
@@ -352,7 +389,11 @@ export default function NewRecipePage() {
           Soft — we aim close, never refuse.
         </p>
         <div className="mt-4">
-          <MacroPresetPicker onChange={setMacroTarget} />
+          <MacroPresetPicker
+            key={macroPickerKey}
+            initialValue={macroTarget}
+            onChange={setMacroTarget}
+          />
         </div>
       </section>
 

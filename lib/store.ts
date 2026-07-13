@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { Recipe } from "./schemas";
+import type { MacroTarget, MealSettings, Recipe } from "./schemas";
 
 // Device-local persistence only (ADR-0002). Keys per docs/DATA-MODEL.md.
 
@@ -119,6 +119,72 @@ export const usePrefsStore = create<PrefsState>()(
     }
   )
 );
+
+// The New Recipe Draft (issue #8): the in-progress form, so an accidental
+// refresh/navigation doesn't lose captured ingredients or choices. Cleared
+// once a generation succeeds.
+
+const DEFAULT_DRAFT_MEAL_SETTINGS: MealSettings = {
+  guests: 2,
+  time: "medium",
+  cuisine: "any",
+};
+
+interface DraftState {
+  ingredients: string[]; // canonical lowercase, as captured on screen
+  macroTarget?: MacroTarget;
+  mealSettings: MealSettings;
+  allowOtherIngredients: boolean;
+  setIngredients: (ingredients: string[]) => void;
+  setMacroTarget: (target: MacroTarget | undefined) => void;
+  setMealSettings: (settings: MealSettings) => void;
+  setAllowOtherIngredients: (on: boolean) => void;
+  clearDraft: () => void;
+}
+
+export const useDraftStore = create<DraftState>()(
+  persist(
+    (set) => ({
+      ingredients: [],
+      macroTarget: undefined,
+      mealSettings: DEFAULT_DRAFT_MEAL_SETTINGS,
+      allowOtherIngredients: false,
+      setIngredients: (ingredients) => set({ ingredients }),
+      setMacroTarget: (macroTarget) => set({ macroTarget }),
+      setMealSettings: (mealSettings) => set({ mealSettings }),
+      setAllowOtherIngredients: (allowOtherIngredients) => set({ allowOtherIngredients }),
+      clearDraft: () =>
+        set({
+          ingredients: [],
+          macroTarget: undefined,
+          mealSettings: DEFAULT_DRAFT_MEAL_SETTINGS,
+          allowOtherIngredients: false,
+        }),
+    }),
+    {
+      name: "dishcover.draft.v1",
+      version: 1,
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
+
+/** True once the draft holds anything worth restoring or clearing. */
+export function isDraftNonEmpty(state: {
+  ingredients: string[];
+  macroTarget?: MacroTarget;
+  mealSettings: MealSettings;
+  allowOtherIngredients: boolean;
+}): boolean {
+  return (
+    state.ingredients.length > 0 ||
+    !!state.macroTarget ||
+    state.allowOtherIngredients ||
+    state.mealSettings.guests !== DEFAULT_DRAFT_MEAL_SETTINGS.guests ||
+    state.mealSettings.time !== DEFAULT_DRAFT_MEAL_SETTINGS.time ||
+    state.mealSettings.cuisine !== DEFAULT_DRAFT_MEAL_SETTINGS.cuisine
+  );
+}
 
 /** Gate for store-driven UI so SSR markup never mismatches localStorage. */
 import { useSyncExternalStore } from "react";

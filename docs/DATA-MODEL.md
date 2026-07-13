@@ -71,6 +71,13 @@ interface Preferences {
 }
 
 type Pantry = string[];        // ingredient names, canonical lowercase
+
+interface Draft {               // in-progress New Recipe form (issue #8)
+  ingredients: string[];        // captured chips, canonical lowercase
+  macroTarget?: MacroTarget;
+  mealSettings: { guests: number; time: "fast" | "medium" | "long"; cuisine: string };
+  allowOtherIngredients: boolean;
+}
 ```
 
 ## Storage keys
@@ -80,6 +87,6 @@ type Pantry = string[];        // ingredient names, canonical lowercase
 | `dishcover.recipes.v1` | `Recipe[]` (newest first, soft cap ~200 with LRU eviction of non-favorites) |
 | `dishcover.pantry.v1` | `Pantry` |
 | `dishcover.prefs.v1` | `Preferences` |
-| `dishcover.draft.v1` | In-progress New Recipe form (survives accidental refresh) |
+| `dishcover.draft.v1` | `Draft` — in-progress New Recipe form (survives accidental refresh); cleared on successful generation |
 
 State management: Zustand stores hydrated from these keys, write-through on change. No server persistence of any kind; the LLM proxy is stateless.

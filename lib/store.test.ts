@@ -51,15 +51,25 @@ function makeRecipe(id: string, favorite = false): Recipe {
 
 let useRecipeStore: typeof import("./store").useRecipeStore;
 let usePrefsStore: typeof import("./store").usePrefsStore;
+let useDraftStore: typeof import("./store").useDraftStore;
+let isDraftNonEmpty: typeof import("./store").isDraftNonEmpty;
+
+const DEFAULT_MEAL_SETTINGS = { guests: 2, time: "medium", cuisine: "any" } as const;
 
 beforeAll(async () => {
   stubLocalStorage();
-  ({ useRecipeStore, usePrefsStore } = await import("./store"));
+  ({ useRecipeStore, usePrefsStore, useDraftStore, isDraftNonEmpty } = await import("./store"));
 });
 
 beforeEach(() => {
   useRecipeStore.setState({ recipes: [] });
   usePrefsStore.setState({ dietary: [], avoidList: [], equipment: [] });
+  useDraftStore.setState({
+    ingredients: [],
+    macroTarget: undefined,
+    mealSettings: DEFAULT_MEAL_SETTINGS,
+    allowOtherIngredients: false,
+  });
 });
 
 describe("recipe store", () => {
@@ -151,5 +161,81 @@ describe("prefs store", () => {
     const raw = localStorage.getItem("dishcover.prefs.v1");
     expect(raw).toBeTruthy();
     expect(JSON.parse(raw!).state.dietary).toEqual(["vegan"]);
+  });
+});
+
+describe("draft store", () => {
+  it("starts empty with default meal settings", () => {
+    const s = useDraftStore.getState();
+    expect(s.ingredients).toEqual([]);
+    expect(s.macroTarget).toBeUndefined();
+    expect(s.mealSettings).toEqual(DEFAULT_MEAL_SETTINGS);
+    expect(s.allowOtherIngredients).toBe(false);
+  });
+
+  it("sets each field independently", () => {
+    useDraftStore.getState().setIngredients(["eggs", "spinach"]);
+    useDraftStore.getState().setMacroTarget({ proteinG: 30 });
+    useDraftStore.getState().setMealSettings({ guests: 4, time: "fast", cuisine: "italian" });
+    useDraftStore.getState().setAllowOtherIngredients(true);
+
+    const s = useDraftStore.getState();
+    expect(s.ingredients).toEqual(["eggs", "spinach"]);
+    expect(s.macroTarget).toEqual({ proteinG: 30 });
+    expect(s.mealSettings).toEqual({ guests: 4, time: "fast", cuisine: "italian" });
+    expect(s.allowOtherIngredients).toBe(true);
+  });
+
+  it("clearDraft resets every field back to defaults", () => {
+    useDraftStore.getState().setIngredients(["eggs"]);
+    useDraftStore.getState().setMacroTarget({ proteinG: 30 });
+    useDraftStore.getState().setMealSettings({ guests: 4, time: "fast", cuisine: "italian" });
+    useDraftStore.getState().setAllowOtherIngredients(true);
+
+    useDraftStore.getState().clearDraft();
+
+    const s = useDraftStore.getState();
+    expect(s.ingredients).toEqual([]);
+    expect(s.macroTarget).toBeUndefined();
+    expect(s.mealSettings).toEqual(DEFAULT_MEAL_SETTINGS);
+    expect(s.allowOtherIngredients).toBe(false);
+  });
+
+  it("persists under dishcover.draft.v1", () => {
+    useDraftStore.getState().setIngredients(["eggs"]);
+    const raw = localStorage.getItem("dishcover.draft.v1");
+    expect(raw).toBeTruthy();
+    expect(JSON.parse(raw!).state.ingredients).toEqual(["eggs"]);
+  });
+});
+
+describe("isDraftNonEmpty", () => {
+  const empty = {
+    ingredients: [] as string[],
+    macroTarget: undefined,
+    mealSettings: DEFAULT_MEAL_SETTINGS,
+    allowOtherIngredients: false,
+  };
+
+  it("is false for a fresh draft", () => {
+    expect(isDraftNonEmpty(empty)).toBe(false);
+  });
+
+  it("is true when ingredients are captured", () => {
+    expect(isDraftNonEmpty({ ...empty, ingredients: ["eggs"] })).toBe(true);
+  });
+
+  it("is true when a macro target is set", () => {
+    expect(isDraftNonEmpty({ ...empty, macroTarget: { proteinG: 30 } })).toBe(true);
+  });
+
+  it("is true when allowOtherIngredients is toggled on", () => {
+    expect(isDraftNonEmpty({ ...empty, allowOtherIngredients: true })).toBe(true);
+  });
+
+  it("is true when meal settings differ from the defaults", () => {
+    expect(
+      isDraftNonEmpty({ ...empty, mealSettings: { guests: 3, time: "medium", cuisine: "any" } })
+    ).toBe(true);
   });
 });

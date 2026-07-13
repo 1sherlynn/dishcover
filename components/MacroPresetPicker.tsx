@@ -41,13 +41,33 @@ function toTarget(fields: Fields): MacroTarget | undefined {
   return Object.keys(target).length > 0 ? target : undefined;
 }
 
+/** Which preset chip (if any) a restored target matches — for seeding initial state. */
+export function presetNameForTarget(target: MacroTarget | undefined): string {
+  if (!target || Object.keys(target).length === 0) return "None";
+  const named = PRESETS.find(
+    (p) => p.grams && MACROS.every(({ key }) => target[key] === p.grams![key])
+  );
+  return named ? named.name : "Custom";
+}
+
+/** Restored target as editable gram-field strings — for seeding initial state. */
+export function fieldsForTarget(target: MacroTarget | undefined): Fields {
+  return {
+    proteinG: target?.proteinG?.toString() ?? "",
+    carbsG: target?.carbsG?.toString() ?? "",
+    fatG: target?.fatG?.toString() ?? "",
+  };
+}
+
 export function MacroPresetPicker({
+  initialValue,
   onChange,
 }: {
+  initialValue?: MacroTarget;
   onChange: (target: MacroTarget | undefined) => void;
 }) {
-  const [preset, setPreset] = useState("None");
-  const [fields, setFields] = useState<Fields>(EMPTY);
+  const [preset, setPreset] = useState(() => presetNameForTarget(initialValue));
+  const [fields, setFields] = useState<Fields>(() => fieldsForTarget(initialValue));
 
   const pick = (name: string) => {
     setPreset(name);
