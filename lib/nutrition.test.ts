@@ -25,6 +25,14 @@ describe("kcalFromMacros", () => {
   it("applies Atwater factors 4/4/9", () => {
     expect(kcalFromMacros({ proteinG: 30, carbsG: 40, fatG: 20 })).toBe(460);
   });
+
+  it("returns 0 for all-zero macros", () => {
+    expect(kcalFromMacros({ proteinG: 0, carbsG: 0, fatG: 0 })).toBe(0);
+  });
+
+  it("does not round fractional gram inputs", () => {
+    expect(kcalFromMacros({ proteinG: 1.25, carbsG: 1.25, fatG: 1.1 })).toBeCloseTo(19.9, 10);
+  });
 });
 
 describe("applyKcalConsistency", () => {
@@ -49,5 +57,36 @@ describe("applyKcalConsistency", () => {
     const n = per({ kcal: 600, proteinG: 30, carbsG: 40, fatG: 20 });
     applyKcalConsistency(n);
     expect(n.kcal).toBe(600);
+  });
+
+  it("keeps stated kcal exactly at the 10% tolerance boundary", () => {
+    // computed = 460; 506 is exactly 10% off (not > tolerance)
+    const n = per({ kcal: 506, proteinG: 30, carbsG: 40, fatG: 20 });
+    expect(applyKcalConsistency(n).kcal).toBe(506);
+  });
+
+  it("corrects kcal just past the 10% tolerance boundary", () => {
+    // computed = 460; 507 is just over 10% off
+    const n = per({ kcal: 507, proteinG: 30, carbsG: 40, fatG: 20 });
+    expect(applyKcalConsistency(n).kcal).toBe(460);
+  });
+
+  it("rounds the corrected kcal to the nearest integer", () => {
+    // computed = 4*1.25 + 4*1.25 + 9*1.1 = 19.9; stated 100 is far outside tolerance
+    const n = per({ kcal: 100, proteinG: 1.25, carbsG: 1.25, fatG: 1.1 });
+    expect(applyKcalConsistency(n).kcal).toBe(20);
+  });
+
+  it("rounds a corrected kcal exactly on a .5 boundary up", () => {
+    // computed = 4*1 + 4*1.375 + 9*0 = 9.5; stated 100 is far outside tolerance
+    const n = per({ kcal: 100, proteinG: 1, carbsG: 1.375, fatG: 0 });
+    expect(applyKcalConsistency(n).kcal).toBe(10);
+  });
+
+  it("leaves kcal untouched when computed macros sum negative", () => {
+    // computed = 4*-10 = -40, which is <= 0, so the <=0 guard short-circuits
+    // before the tolerance check regardless of how far off the stated kcal is
+    const n = per({ kcal: 9999, proteinG: -10, carbsG: 0, fatG: 0 });
+    expect(applyKcalConsistency(n).kcal).toBe(9999);
   });
 });
