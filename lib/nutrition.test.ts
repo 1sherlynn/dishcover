@@ -76,4 +76,17 @@ describe("applyKcalConsistency", () => {
     const n = per({ kcal: 100, proteinG: 1.25, carbsG: 1.25, fatG: 1.1 });
     expect(applyKcalConsistency(n).kcal).toBe(20);
   });
+
+  it("rounds a corrected kcal exactly on a .5 boundary up", () => {
+    // computed = 4*1 + 4*1.375 + 9*0 = 9.5; stated 100 is far outside tolerance
+    const n = per({ kcal: 100, proteinG: 1, carbsG: 1.375, fatG: 0 });
+    expect(applyKcalConsistency(n).kcal).toBe(10);
+  });
+
+  it("leaves kcal untouched when computed macros sum negative", () => {
+    // computed = 4*-10 = -40, which is <= 0, so the <=0 guard short-circuits
+    // before the tolerance check regardless of how far off the stated kcal is
+    const n = per({ kcal: 9999, proteinG: -10, carbsG: 0, fatG: 0 });
+    expect(applyKcalConsistency(n).kcal).toBe(9999);
+  });
 });
