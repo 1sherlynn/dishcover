@@ -1,17 +1,13 @@
 import { GenerateRequestSchema } from "@/lib/schemas";
 import { mockRecipe } from "@/lib/mock-recipe";
-import { createRateGuard } from "@/lib/rate-guard";
+import { guard } from "@/lib/rate-guard";
 import { resolveModel, runGeneration, GenerationFailedError } from "@/lib/generation";
 
 // Thin adapter (ADR-0002): HTTP in, HTTP out. Parsing, guardrails, and mock
 // mode live here; the Generator (lib/generation.ts) owns the rules.
 // Guardrails are in-memory — per serverless instance, a courtesy barrier for
-// a personal+friends deployment, not real abuse protection.
-
-const guard = createRateGuard({
-  perIpLimit: Number(process.env.GENERATIONS_PER_10MIN_PER_IP ?? 10),
-  dailyCap: Number(process.env.DAILY_GENERATION_CAP ?? 100),
-});
+// a personal+friends deployment, not real abuse protection. The guard is
+// shared with /api/scan (lib/rate-guard.ts) so the daily cap stays global.
 
 export async function POST(request: Request) {
   let body: unknown;

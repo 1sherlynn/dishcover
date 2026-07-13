@@ -39,3 +39,12 @@ export function createRateGuard({
     return null;
   };
 }
+
+// Shared singleton (module scope, so every importer gets the same in-memory
+// state): the daily spend cap is global across both proxy endpoints
+// (ADR-0002), so /api/generate and /api/scan must count against one guard,
+// not two independent instances.
+export const guard = createRateGuard({
+  perIpLimit: Number(process.env.GENERATIONS_PER_10MIN_PER_IP ?? 10),
+  dailyCap: Number(process.env.DAILY_GENERATION_CAP ?? 100),
+});
