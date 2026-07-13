@@ -106,3 +106,4 @@ export type MacroTarget = z.infer<typeof MacroTargetSchema>;
 export type GeneratedRecipe = z.infer<typeof GeneratedRecipeSchema>;
 export type Recipe = z.infer<typeof RecipeSchema>;
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
+export type MealSettings = GenerateRequest["mealSettings"];

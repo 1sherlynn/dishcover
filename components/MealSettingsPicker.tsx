@@ -1,14 +1,12 @@
 "use client";
 
-import type { GenerateRequest } from "@/lib/schemas";
+import type { MealSettings } from "@/lib/schemas";
 
 // Meal Settings (CONTEXT.md): the per-generation knobs — Guests, Time,
 // Cuisine — plus the Allow Other Ingredients toggle. Values flow into the
 // Generation Request via the screen; this component never talks to stores.
 // Patterns per DESIGN-SYSTEM.md: boxed stepper (Recipe Detail serves) and
 // dashed chips (suggestions / macro presets).
-
-export type MealSettings = GenerateRequest["mealSettings"];
 
 const TIMES: { value: MealSettings["time"]; label: string; range: string }[] = [
   { value: "fast", label: "Fast", range: "<20m" },
