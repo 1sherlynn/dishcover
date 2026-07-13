@@ -23,12 +23,15 @@ export function Chip({
   onClick,
   onRemove,
   selected,
+  flagged,
   delay,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   onRemove?: () => void;
   selected?: boolean;
+  /** Visually flags a low-confidence item for review (e.g. a Scan result). */
+  flagged?: boolean;
   delay?: number;
 }) {
   return (
@@ -36,10 +39,17 @@ export function Chip({
       className={`rise inline-flex items-center gap-1.5 rounded-control border-[1.5px] px-4 py-2 text-sm font-bold transition-colors ${
         selected
           ? "border-ink bg-accent text-accent-ink"
-          : "border-ink/60 bg-surface text-ink"
+          : flagged
+            ? "border-dashed border-warn bg-surface text-ink"
+            : "border-ink/60 bg-surface text-ink"
       }`}
       style={delay !== undefined ? ({ "--rise-delay": `${delay}ms` } as React.CSSProperties) : undefined}
     >
+      {flagged && (
+        <span aria-label="Low confidence" title="Low confidence — double-check this one" className="text-warn">
+          ?
+        </span>
+      )}
       {onClick ? (
         <button type="button" onClick={onClick} className="flex items-center gap-1.5">
           <span aria-hidden className="text-ink-soft">+</span>
