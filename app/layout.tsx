@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   title: "Dishcover",
   description:
     "Turn what's already in your kitchen into recipes — with honest nutrition, every time.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Dishcover",
+  },
 };
 
 export const viewport: Viewport = {
@@ -33,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-theme="riso">
       <body className={`${bricolage.variable} ${courier.variable} ${caveat.variable}`}>
         <div className="atmosphere" />
-        <div className="mx-auto min-h-dvh w-full max-w-2xl px-5 pb-28 pt-6 md:px-6">
+        <div className="mx-auto min-h-dvh w-full max-w-[640px] px-5 pb-28 pt-6 md:px-6">
           {children}
         </div>
       </body>

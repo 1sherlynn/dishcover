@@ -6,7 +6,7 @@ Rollout: **Phase 1 = tokens + Recipe Detail + dish art** (shipped); **Phase 2 = 
 
 ## Screens (Phase 2)
 
-- **Home** — greeting micro-label, `WHAT'S COOKING?` display, plum `+ ADD NEW RECIPE` slab, `IN YOUR PANTRY` dotted-rule section with dashed shelf chips and a `manage →` link, `MADE FOR YOU` with the latest recipe as a featured wide card (`LATEST` sticker) above the grid, folio `PG. 01`.
+- **Home** — greeting micro-label, `WHAT'S COOKING?` display, plum `+ ADD NEW RECIPE` slab, `IN YOUR PANTRY` dotted-rule section with dashed shelf chips and a `manage →` link, `MADE FOR YOU` with the latest recipe as a featured wide card (`LATEST` sticker) above the grid, folio `PG. 01`. At ≥768px the hero slab hides and a compact `+ New recipe` button appears in the header next to the settings gear (issue #10).
 - **Pantry** — `THE PANTRY` display title, mono intro, boxed input with plum `+`, `ON THE SHELF` dotted rule with item count, solid-border chips with ink `×` boxes, `QUICK ADD` dashed chips with plum `+`, folio `PG. 02`.
 - **Build a Recipe** — `INGREDIENTS` label with the Type/Dictate/Scan segmented row (unbuilt modes render dimmed), boxed input, dashed suggestion chips, `MACRO TARGET` panel on teal wash (pop label tab, preset chips, boxed gram fields, Caveat aside), folio `PG. 04`, plum `COOK THIS UP ✦` slab. Meal Settings (guests/time/cuisine) and the allow-other toggle join this screen via issue #4 using the reference's boxed-stepper and dashed-chip patterns.
 
@@ -18,11 +18,13 @@ Spot inks (each has a 50→900 scale in the reference; the app uses these workin
 
 | Ink | Value | Used for |
 |---|---|---|
-| Teal | `#1E958A` | quantities, macros-protein, serve steppers, hand annotations |
+| Teal | `#18776E` | quantities, macros-protein, serve steppers, hand annotations |
 | Mustard | `#E3A21E` | art frames, macros-carbs, warn band, timers |
 | Moss | `#6F9A4E` | macros-fat, positive band |
 | Blueberry | `#4E74B8` | pop accents, links |
-| Plum | `#B85F87` | CTAs, stickers, favorites, selected chips |
+| Plum | `#AC4C77` | CTAs, stickers, favorites, selected chips |
+
+Teal and Plum were retuned darker from the original sheet (`#1E958A`, `#B85F87`) to clear WCAG AA contrast (4.5:1) against paper at any text size — the originals measured 3.31:1 and 3.78:1, which only the Lighthouse a11y audit (issue #10) caught.
 
 Semantic token mapping (CSS variables on `:root[data-theme="riso"]`; the contract from the original system is preserved so all components keep working):
 
@@ -59,4 +61,4 @@ Single scrolling zine page (no tabs): framed dish art with sticker tag + `SERVES
 
 ## Motion & responsiveness
 
-Rise/stagger entrances and reduced-motion rules unchanged. Layout rules unchanged (mobile-first 390px, centered 640px column, grid widening at ≥768/1024px). Lighthouse and contrast targets unchanged — ink on paper clears AA everywhere; check plum-on-paper for small text (use ink for body, plum for display-size only).
+Rise/stagger entrances and reduced-motion rules unchanged (`prefers-reduced-motion` also disables the Generating screen's `.simmer` rings — issue #10). Layout rules unchanged (mobile-first 390px, centered 640px column, grid widening at ≥768/1024px). Lighthouse mobile audited on Home + Recipe Detail (issue #10): perf ≥90, a11y ≥95, both cleared with margin — ink on paper clears AA everywhere; Teal/Plum were retuned per the Ink Kit table above so they clear AA on paper at any size, no "display-size only" carve-out needed anymore.

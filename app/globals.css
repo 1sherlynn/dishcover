@@ -14,9 +14,9 @@
   --th-surface-alt: #f1e6cc;
   --th-ink: #2e2620;
   --th-ink-soft: #6a5f4f;
-  --th-accent: #b85f87;
+  --th-accent: #ac4c77;
   --th-accent-ink: #faf3e3;
-  --th-highlight: #1e958a;
+  --th-highlight: #18776e;
   --th-positive: #6f9a4e;
   --th-warn: #e3a21e;
   --th-danger: #be4b33;
@@ -171,6 +171,11 @@ h1, h2, h3 {
   50% { transform: scale(1.12); opacity: 1; }
 }
 
+.simmer {
+  animation: simmer calc(2.4s * var(--th-motion-speed)) ease-in-out infinite;
+  animation-delay: var(--simmer-delay, 0s);
+}
+
 @keyframes bar-grow {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
@@ -184,5 +189,6 @@ h1, h2, h3 {
 
 @media (prefers-reduced-motion: reduce) {
   .rise, .bar-fill { animation-duration: 1ms; animation-delay: 0ms; }
+  .simmer { animation: none; }
   * { transition-duration: 1ms !important; }
 }

@@ -42,6 +42,12 @@ export default function HomePage() {
         <div className="flex items-center gap-3">
           <span className="zine-label text-ink-soft">Dishcover Zine · No.07</span>
           <Link
+            href="/new"
+            className="hidden items-center border-2 border-ink bg-accent px-4 py-2 font-display text-sm font-bold uppercase tracking-wider text-accent-ink shadow-[3px_3px_0_var(--th-ink)] transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none md:flex"
+          >
+            + New recipe
+          </Link>
+          <Link
             href="/settings"
             aria-label="Settings"
             className="grid h-9 w-9 place-items-center rounded-control border-2 border-ink bg-surface text-base transition-transform active:translate-y-0.5"
@@ -60,7 +66,7 @@ export default function HomePage() {
         </h1>
         <Link
           href="/new"
-          className="mt-6 block border-2 border-ink bg-accent px-8 py-4 text-center font-display text-lg font-bold uppercase tracking-wider text-accent-ink shadow-[4px_4px_0_var(--th-ink)] transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+          className="mt-6 block border-2 border-ink bg-accent px-8 py-4 text-center font-display text-lg font-bold uppercase tracking-wider text-accent-ink shadow-[4px_4px_0_var(--th-ink)] transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none md:hidden"
         >
           + Add new recipe
         </Link>
