@@ -14,6 +14,7 @@ import { useDraftStore, useHydrated, isDraftNonEmpty } from "@/lib/store";
 import { scanPhoto, type ScanError } from "@/lib/scan-photo";
 import { compressImage } from "@/lib/compress-image";
 import type { ScanIngredient } from "@/lib/schemas";
+import { FOLIO, formatFolio } from "@/lib/folio";
 
 const SUGGESTIONS = [
   "chicken breast", "eggs", "spinach", "tomatoes", "salmon",
@@ -46,6 +47,7 @@ export default function NewRecipePage() {
   const [error, setError] = useState<GenerationError | null>(null);
   const [lineIdx, setLineIdx] = useState(0);
   const lineTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const generationAbort = useRef<AbortController | null>(null);
   const [showRestored, setShowRestored] = useState(false);
   // Bumped once hydration lands (to seed the uncontrolled MacroPresetPicker
   // with the restored target) and again on manual reset (to clear it).
@@ -109,7 +111,16 @@ export default function NewRecipePage() {
     setScanDraft("");
   };
 
+  // (#43) This sits directly beside Confirm and throws away the entire
+  // reviewed list — including anything typed in by hand. Worth one question
+  // when there is actually something to lose.
   const cancelScan = () => {
+    if (
+      scanReview.length > 0 &&
+      !confirm("Discard these scanned ingredients? They won't be added.")
+    ) {
+      return;
+    }
     setScanReview([]);
     setScanState("idle");
   };
@@ -125,6 +136,8 @@ export default function NewRecipePage() {
   };
 
   const generate = async () => {
+    const abort = new AbortController();
+    generationAbort.current = abort;
     setPhase("generating");
     setError(null);
     setLineIdx(0);
@@ -137,15 +150,26 @@ export default function NewRecipePage() {
       macroTarget,
       mealSettings,
       allowOtherIngredients,
+      signal: abort.signal,
     });
     if (lineTimer.current) clearInterval(lineTimer.current);
+    generationAbort.current = null;
     if (result.ok) {
       clearDraft();
       router.push(`/recipe/${result.recipe.id}`);
     } else {
-      setError(result.error);
+      // Cancelling is the user's own doing — return to the form quietly
+      // rather than accusing them of an error (#43).
+      setError(result.error.kind === "cancelled" ? null : result.error);
       setPhase("form");
     }
+  };
+
+  // (#43) The generating takeover had no abort and no back, pinning the user
+  // to a full-screen overlay until the request resolved. The draft is
+  // untouched, so cancelling drops them back on their ingredients.
+  const cancelGeneration = () => {
+    generationAbort.current?.abort();
   };
 
   if (phase === "generating") {
@@ -172,6 +196,13 @@ export default function NewRecipePage() {
           <p aria-live="polite" className="mt-2 font-bold text-ink-soft">
             {SIMMER_LINES[lineIdx]}
           </p>
+          <button
+            type="button"
+            onClick={cancelGeneration}
+            className="mt-8 border-2 border-ink bg-surface px-6 py-3 font-display text-sm font-bold uppercase tracking-wider text-ink transition-transform active:translate-y-0.5"
+          >
+            Cancel
+          </button>
         </div>
       </main>
     );
@@ -236,12 +267,19 @@ export default function NewRecipePage() {
           <span className="grid place-items-center border-2 border-ink bg-accent px-2 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-accent-ink">
             ✎ Type
           </span>
-          <span
+          {/* (#41) Was a greyed <span> explained only by title="Coming soon".
+              `title` is hover-only, so on a phone — this PWA's primary target —
+              tapping it did nothing and there was no way at all to find out why.
+              A real disabled button carries the state in the accessibility tree,
+              and "soon" is visible text rather than a hover secret. */}
+          <button
+            type="button"
+            disabled
             className="grid place-items-center border-2 border-ink/30 bg-surface px-2 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-ink-soft/60"
-            title="Coming soon"
           >
-            ◉ Dictate
-          </span>
+            <span>◉ Dictate</span>
+            <span className="mt-0.5 text-[9px] tracking-[0.1em] opacity-80">soon</span>
+          </button>
           <button
             type="button"
             onClick={() => scanInputRef.current?.click()}
@@ -401,7 +439,7 @@ export default function NewRecipePage() {
 
       <footer className="mt-10 flex items-center justify-between border-t-2 border-ink pb-4 pt-3">
         <span className="zine-label">✳ Dishcover</span>
-        <span className="zine-label text-ink-soft">Pg. 04</span>
+        <span className="zine-label text-ink-soft">Pg. {formatFolio(FOLIO.new)}</span>
       </footer>
 
       <div className="fixed inset-x-0 bottom-0 mx-auto max-w-2xl px-5 pb-6 pt-3 md:px-6">

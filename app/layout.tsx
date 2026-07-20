@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Courier_Prime, Caveat } from "next/font/google";
 import "./globals.css";
+import { StorageAlert } from "@/components/StorageAlert";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -39,6 +40,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${bricolage.variable} ${courier.variable} ${caveat.variable}`}>
         <div className="atmosphere" />
         <div className="mx-auto min-h-dvh w-full max-w-[640px] px-5 pb-28 pt-6 md:px-6">
+          {/* A full device store can bite on any screen, so the alert is global (#40). */}
+          <StorageAlert />
           {children}
         </div>
       </body>

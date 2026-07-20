@@ -206,3 +206,78 @@ describe("generateRecipe", () => {
     expect(result.error.kind).toBe("generation-failed");
   });
 });
+
+// #43: once the generating takeover started there was no abort and no back —
+// the user was pinned to a full-screen overlay until the request resolved.
+// Cancelling has to be distinguishable from a failure, or the UI shows an
+// error banner for something the user did on purpose.
+describe("cancelling a generation", () => {
+  it("reports a cancelled generation as its own kind, not a failure", async () => {
+    const controller = new AbortController();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => {
+        controller.abort();
+        return Promise.reject(
+          Object.assign(new Error("aborted"), { name: "AbortError" })
+        );
+      })
+    );
+
+    const result = await generateRecipe({
+      capturedIngredients: ["eggs"],
+      signal: controller.signal,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe("cancelled");
+  });
+
+  it("does not save a recipe from a generation the user cancelled", async () => {
+    const controller = new AbortController();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        // The response landed, but the user had already walked away.
+        controller.abort();
+        return new Response(JSON.stringify(sampleGenerated()), { status: 200 });
+      })
+    );
+
+    const result = await generateRecipe({
+      capturedIngredients: ["eggs"],
+      signal: controller.signal,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(useRecipeStore.getState().recipes).toHaveLength(0);
+  });
+
+  it("passes the signal to fetch so the request is actually torn down", async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn(
+      async (_url: string, _init?: RequestInit) =>
+        new Response(JSON.stringify(sampleGenerated()), { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await generateRecipe({
+      capturedIngredients: ["eggs"],
+      signal: controller.signal,
+    });
+
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
+  });
+
+  it("still reports a genuine network failure as a failure", async () => {
+    // An un-aborted fetch rejection is not a cancellation.
+    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline"))));
+
+    const result = await generateRecipe({ capturedIngredients: ["eggs"] });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.kind).toBe("generation-failed");
+  });
+});

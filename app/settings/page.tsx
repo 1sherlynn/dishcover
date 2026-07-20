@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePrefsStore, useHydrated } from "@/lib/store";
+import { FOLIO, ZINE_NO, formatFolio } from "@/lib/folio";
 
 // Settings as a Riso zine page (PRODUCT-SPEC §7): the standing preferences —
 // Dietary Preferences, Avoid List, Equipment — that join every generation.
@@ -82,7 +83,7 @@ export default function SettingsPage() {
           </Link>
           <h1 className="text-3xl font-extrabold uppercase">Settings</h1>
         </div>
-        <span className="zine-label hidden text-ink-soft sm:block">No.07</span>
+        <span className="zine-label hidden text-ink-soft sm:block">No.{formatFolio(ZINE_NO)}</span>
       </header>
 
       <p
@@ -187,7 +188,7 @@ export default function SettingsPage() {
 
       <footer className="mt-12 flex items-center justify-between border-t-2 border-ink pb-4 pt-3">
         <span className="zine-label">✳ Dishcover</span>
-        <span className="zine-label text-ink-soft">Pg. 07</span>
+        <span className="zine-label text-ink-soft">Pg. {formatFolio(FOLIO.settings)}</span>
       </footer>
     </main>
   );

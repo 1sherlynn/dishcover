@@ -3,10 +3,37 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { MacroTarget, MealSettings, Recipe } from "./schemas";
+import { addStaple as addStapleTo } from "./pantry";
+import { createGuardedStorage } from "./storage-guard";
 
 // Device-local persistence only (ADR-0002). Keys per docs/DATA-MODEL.md.
 
 const RECIPE_CAP = 200;
+
+// Storage health (#40). localStorage has no room left and the write just
+// failed — the data is still in memory for this session, but it will not
+// survive a reload. Not itself persisted: writing it could fail too.
+interface StorageHealthState {
+  /** The store key whose last write was rejected for want of quota. */
+  failedKey: string | null;
+  reportQuotaExceeded: (key: string) => void;
+  clearQuotaError: () => void;
+}
+
+export const useStorageHealth = create<StorageHealthState>()((set) => ({
+  failedKey: null,
+  reportQuotaExceeded: (key) => set({ failedKey: key }),
+  clearQuotaError: () => set({ failedKey: null }),
+}));
+
+/**
+ * localStorage for a persisted store, with quota failures routed to the
+ * health store instead of disappearing. Every persisted store uses this.
+ */
+const guardedLocalStorage = () =>
+  createGuardedStorage(localStorage, (key) =>
+    useStorageHealth.getState().reportQuotaExceeded(key)
+  );
 
 interface RecipeState {
   recipes: Recipe[];
@@ -41,7 +68,7 @@ export const useRecipeStore = create<RecipeState>()(
     {
       name: "dishcover.recipes.v1",
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(guardedLocalStorage),
     }
   )
 );
@@ -59,17 +86,21 @@ export const usePantryStore = create<PantryState>()(
   persist(
     (set) => ({
       pantry: [],
+      // Normalisation and the same-item guard live in lib/pantry.ts (#42);
+      // addStapleTo returns the same array reference when there's nothing
+      // to do, so an already-held staple costs no write.
       addStaple: (name) =>
-        set((s) =>
-          s.pantry.includes(name) ? s : { pantry: [...s.pantry, name] }
-        ),
+        set((s) => {
+          const pantry = addStapleTo(s.pantry, name);
+          return pantry === s.pantry ? s : { pantry };
+        }),
       removeStaple: (name) =>
         set((s) => ({ pantry: s.pantry.filter((x) => x !== name) })),
     }),
     {
       name: "dishcover.pantry.v1",
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(guardedLocalStorage),
     }
   )
 );
@@ -115,7 +146,7 @@ export const usePrefsStore = create<PrefsState>()(
     {
       name: "dishcover.prefs.v1",
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(guardedLocalStorage),
     }
   )
 );
@@ -164,7 +195,7 @@ export const useDraftStore = create<DraftState>()(
     {
       name: "dishcover.draft.v1",
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(guardedLocalStorage),
     }
   )
 );

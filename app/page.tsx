@@ -4,14 +4,22 @@ import Link from "next/link";
 import { HeartButton } from "@/components/ui";
 import { PlaceholderArt } from "@/components/PlaceholderArt";
 import { useRecipeStore, usePantryStore, useHydrated } from "@/lib/store";
+import { FOLIO, formatFolio, zineMasthead } from "@/lib/folio";
+import { useGreeting } from "@/lib/greeting";
 
 // Home as a Riso zine page (reference: "SCREEN · HOME"): greeting,
 // WHAT'S COOKING?, add-recipe CTA, pantry shelf preview, MADE FOR YOU
 // with a featured latest recipe, folio footer.
 
-function greeting(): string {
-  const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+// One definition of the add-recipe CTA (#43): it appears twice because the
+// header pill and the full-width block are different presentations at
+// different breakpoints, but the destination and the label live in one place.
+function AddRecipeCta({ className }: { className: string }) {
+  return (
+    <Link href="/new" className={className}>
+      + New recipe
+    </Link>
+  );
 }
 
 function ZineRule({ label, right }: { label: string; right?: React.ReactNode }) {
@@ -29,6 +37,7 @@ export default function HomePage() {
   const recipes = useRecipeStore((s) => s.recipes);
   const toggleFavorite = useRecipeStore((s) => s.toggleFavorite);
   const pantry = usePantryStore((s) => s.pantry);
+  const greeting = useGreeting();
 
   const [featured, ...rest] = recipes;
 
@@ -40,13 +49,8 @@ export default function HomePage() {
           <span aria-hidden className="h-2 w-2 translate-y-[-2px] rounded-full bg-accent" />
         </Link>
         <div className="flex items-center gap-3">
-          <span className="zine-label text-ink-soft">Dishcover Zine · No.07</span>
-          <Link
-            href="/new"
-            className="hidden items-center border-2 border-ink bg-accent px-4 py-2 font-display text-sm font-bold uppercase tracking-wider text-accent-ink shadow-[3px_3px_0_var(--th-ink)] transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none md:flex"
-          >
-            + New recipe
-          </Link>
+          <span className="zine-label text-ink-soft">{zineMasthead()}</span>
+          <AddRecipeCta className="hidden items-center border-2 border-ink bg-accent px-4 py-2 font-display text-sm font-bold uppercase tracking-wider text-accent-ink shadow-[3px_3px_0_var(--th-ink)] transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none md:flex" />
           <Link
             href="/settings"
             aria-label="Settings"
@@ -58,18 +62,13 @@ export default function HomePage() {
       </header>
 
       <section className="rise mt-8" style={{ "--rise-delay": "50ms" } as React.CSSProperties}>
-        {hydrated && <p className="zine-label text-ink-soft">{greeting()}</p>}
+        {greeting && <p className="zine-label text-ink-soft">{greeting}</p>}
         <h1 className="mt-1 text-[2.6rem] font-extrabold uppercase leading-[0.95]">
           What&rsquo;s
           <br />
           cooking?
         </h1>
-        <Link
-          href="/new"
-          className="mt-6 block border-2 border-ink bg-accent px-8 py-4 text-center font-display text-lg font-bold uppercase tracking-wider text-accent-ink shadow-[4px_4px_0_var(--th-ink)] transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none md:hidden"
-        >
-          + Add new recipe
-        </Link>
+        <AddRecipeCta className="mt-6 block border-2 border-ink bg-accent px-8 py-4 text-center font-display text-lg font-bold uppercase tracking-wider text-accent-ink shadow-[4px_4px_0_var(--th-ink)] transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none md:hidden" />
       </section>
 
       <section className="rise mt-10" style={{ "--rise-delay": "100ms" } as React.CSSProperties}>
@@ -171,7 +170,7 @@ export default function HomePage() {
 
       <footer className="mt-12 flex items-center justify-between border-t-2 border-ink pb-4 pt-3">
         <span className="zine-label">✳ Dishcover</span>
-        <span className="zine-label text-ink-soft">Pg. 01</span>
+        <span className="zine-label text-ink-soft">Pg. {formatFolio(FOLIO.home)}</span>
       </footer>
     </main>
   );
