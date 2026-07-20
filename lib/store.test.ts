@@ -53,12 +53,23 @@ let useRecipeStore: typeof import("./store").useRecipeStore;
 let usePrefsStore: typeof import("./store").usePrefsStore;
 let useDraftStore: typeof import("./store").useDraftStore;
 let isDraftNonEmpty: typeof import("./store").isDraftNonEmpty;
+let usePantryStore: typeof import("./store").usePantryStore;
+let useStorageHealth: typeof import("./store").useStorageHealth;
+let STORE_KEYS: typeof import("./store").STORE_KEYS;
 
 const DEFAULT_MEAL_SETTINGS = { guests: 2, time: "medium", cuisine: "any" } as const;
 
 beforeAll(async () => {
   stubLocalStorage();
-  ({ useRecipeStore, usePrefsStore, useDraftStore, isDraftNonEmpty } = await import("./store"));
+  ({
+    useRecipeStore,
+    usePrefsStore,
+    useDraftStore,
+    usePantryStore,
+    useStorageHealth,
+    STORE_KEYS,
+    isDraftNonEmpty,
+  } = await import("./store"));
 });
 
 beforeEach(() => {
@@ -70,6 +81,8 @@ beforeEach(() => {
     mealSettings: DEFAULT_MEAL_SETTINGS,
     allowOtherIngredients: false,
   });
+  usePantryStore.setState({ pantry: [] });
+  useStorageHealth.setState({ failedKey: null });
 });
 
 describe("recipe store", () => {
@@ -237,5 +250,85 @@ describe("isDraftNonEmpty", () => {
     expect(
       isDraftNonEmpty({ ...empty, mealSettings: { guests: 3, time: "medium", cuisine: "any" } })
     ).toBe(true);
+  });
+});
+
+// #42: the store is where normalisation actually has to bite — lib/pantry.ts
+// being correct is not enough if the store bypasses it.
+describe("pantry store", () => {
+  it("stores a staple in canonical form", () => {
+    usePantryStore.getState().addStaple("  Tomatoes ");
+
+    expect(usePantryStore.getState().pantry).toEqual(["tomato"]);
+  });
+
+  it("does not add the same item twice under different forms", () => {
+    const s = usePantryStore.getState();
+    s.addStaple("tomatoes");
+    s.addStaple("tomato");
+    s.addStaple("TOMATO");
+
+    expect(usePantryStore.getState().pantry).toEqual(["tomato"]);
+  });
+
+  it("ignores blank input", () => {
+    usePantryStore.getState().addStaple("   ");
+
+    expect(usePantryStore.getState().pantry).toEqual([]);
+  });
+
+  it("removes a staple", () => {
+    const s = usePantryStore.getState();
+    s.addStaple("salt");
+    s.removeStaple("salt");
+
+    expect(usePantryStore.getState().pantry).toEqual([]);
+  });
+});
+
+// #40: quota failures used to vanish. These cover the wiring — that the
+// guard is actually installed on the persisted stores and reports through
+// the health store — which the lib/storage-guard.ts unit tests cannot see.
+describe("storage health", () => {
+  it("starts clean", () => {
+    expect(useStorageHealth.getState().failedKey).toBeNull();
+  });
+
+  it("records the key whose write was rejected", () => {
+    useStorageHealth.getState().reportQuotaExceeded(STORE_KEYS.recipes);
+
+    expect(useStorageHealth.getState().failedKey).toBe(STORE_KEYS.recipes);
+  });
+
+  it("can be dismissed", () => {
+    useStorageHealth.getState().reportQuotaExceeded(STORE_KEYS.pantry);
+    useStorageHealth.getState().clearQuotaError();
+
+    expect(useStorageHealth.getState().failedKey).toBeNull();
+  });
+
+  it("reports a real quota failure from a persisted store write", () => {
+    // Make the backing store reject exactly the way a full one does. The
+    // guard is wired at module scope, so patching the stub's setItem
+    // exercises the real path from store.setState to the banner's state.
+    const realSetItem = globalThis.localStorage.setItem;
+    globalThis.localStorage.setItem = (key: string) => {
+      if (key.startsWith("dishcover.")) {
+        const err = new Error("full");
+        err.name = "QuotaExceededError";
+        throw err;
+      }
+    };
+
+    try {
+      usePantryStore.getState().addStaple("saffron");
+    } finally {
+      globalThis.localStorage.setItem = realSetItem;
+    }
+
+    // The staple survives in memory for this session...
+    expect(usePantryStore.getState().pantry).toEqual(["saffron"]);
+    // ...and the failure is no longer silent.
+    expect(useStorageHealth.getState().failedKey).toBe(STORE_KEYS.pantry);
   });
 });

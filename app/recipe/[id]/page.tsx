@@ -8,10 +8,16 @@ import { PlaceholderArt } from "@/components/PlaceholderArt";
 import { useRecipeStore, useHydrated } from "@/lib/store";
 import { NutritionPanel } from "@/components/NutritionPanel";
 import type { Unit } from "@/lib/schemas";
+import { formatFolio, recipeFolio, zineMasthead } from "@/lib/folio";
 
 // Recipe Detail as a Riso zine page (DESIGN-SYSTEM.md §Recipe Detail):
 // one scroll, no tabs — framed dish art, sticker + stamp, ticket-stub meta,
 // MACROS panel, serves + ingredients, method, micros, folio footer.
+
+// The servings scaler's range. Ingredients rescale within it; nutrition does
+// not — see the panel below.
+const MIN_SERVINGS = 1;
+const MAX_SERVINGS = 12;
 
 function formatQty(quantity: number, unit: Unit): string {
   const q = Math.round(quantity * 4) / 4; // quarter precision for tbsp etc.
@@ -44,7 +50,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
 
   const n = servings ?? recipe.baseServings;
   const factor = n / recipe.baseServings;
-  const zineNo = (recipe.artSeed % 40) + 1;
+  const folio = formatFolio(recipeFolio(recipe.artSeed));
 
   return (
     <main>
@@ -57,9 +63,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
         >
           ←
         </Link>
-        <span className="zine-label text-ink-soft">
-          Dishcover Zine · No.{zineNo.toString().padStart(2, "0")}
-        </span>
+        <span className="zine-label text-ink-soft">{zineMasthead()}</span>
       </header>
 
       {/* framed dish art */}
@@ -71,7 +75,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
         </div>
         <span className="sticker zine-label absolute -right-2 -top-3">{recipe.tag}</span>
         <span className="stamp zine-label absolute -bottom-3 left-3">
-          Serves {recipe.baseServings} ✓
+          Serves {n} ✓
         </span>
         <div className="absolute right-3 top-8 flex flex-col gap-2">
           <HeartButton filled={recipe.favorite} onClick={() => toggleFavorite(recipe.id)} />
@@ -106,7 +110,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
       >
         {[
           { value: `${recipe.timeMinutes}'`, label: "time" },
-          { value: Math.round(recipe.nutrition.perServing.kcal), label: "kcal" },
+          { value: Math.round(recipe.nutrition.perServing.kcal), label: "kcal / serving" },
           { value: recipe.difficulty, label: "level" },
         ].map(({ value, label }) => (
           <div
@@ -132,7 +136,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
             <button
               type="button"
               aria-label="Fewer servings"
-              onClick={() => setServings(Math.max(1, n - 1))}
+              onClick={() => setServings(Math.max(MIN_SERVINGS, n - 1))}
               className="grid h-10 w-10 place-items-center rounded-control border-2 border-ink bg-surface text-lg font-bold active:translate-y-0.5"
             >
               −
@@ -140,13 +144,23 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
             <button
               type="button"
               aria-label="More servings"
-              onClick={() => setServings(Math.min(12, n + 1))}
+              onClick={() => setServings(Math.min(MAX_SERVINGS, n + 1))}
               className="grid h-10 w-10 place-items-center rounded-control border-2 border-ink bg-highlight text-lg font-bold text-white active:translate-y-0.5"
             >
               +
             </button>
           </div>
         </div>
+        {/* (#39) Scaling changes how many servings you cook, not how big a
+            serving is — so the ingredient list moves and the nutrition above
+            correctly does not. Say so at the moment it stops being obvious. */}
+        {n !== recipe.baseServings && (
+          <p role="status" aria-live="polite" className="mt-3 text-xs font-bold leading-relaxed text-ink-soft">
+            Ingredients scaled from {recipe.baseServings} to {n} servings.
+            Nutrition above is per serving, so it stays the same.
+          </p>
+        )}
+
         <ul className="mt-5">
           {recipe.ingredients.map((ing, i) => (
             <li
@@ -199,7 +213,7 @@ export default function RecipePage({ params }: { params: Promise<{ id: string }>
       {/* folio */}
       <footer className="mt-10 flex items-center justify-between border-t-2 border-ink pb-6 pt-3">
         <span className="zine-label">✳ Dishcover</span>
-        <span className="zine-label text-ink-soft">Pg. {zineNo.toString().padStart(2, "0")}</span>
+        <span className="zine-label text-ink-soft">Pg. {folio}</span>
       </footer>
 
       <div className="fixed inset-x-0 bottom-0 mx-auto max-w-2xl px-5 pb-6 pt-3 md:px-6">

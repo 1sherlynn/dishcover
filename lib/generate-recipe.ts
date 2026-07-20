@@ -22,6 +22,8 @@ export interface PerGenerationInputs {
   macroTarget?: MacroTarget;
   mealSettings?: GenerateRequest["mealSettings"];
   allowOtherIngredients?: boolean;
+  /** Aborts the in-flight request when the user backs out (#43). */
+  signal?: AbortSignal;
 }
 
 /** Standing inputs that join every Generation Request automatically. */
@@ -36,7 +38,9 @@ export type GenerationErrorKind =
   | "rate-limited"
   | "budget-exhausted"
   | "invalid-request"
-  | "generation-failed";
+  | "generation-failed"
+  /** The user backed out; not a failure, and not worth an error banner. */
+  | "cancelled";
 
 export interface GenerationError {
   kind: GenerationErrorKind;
@@ -67,6 +71,11 @@ const ERRORS: Record<GenerationErrorKind, GenerationError> = {
   "generation-failed": {
     kind: "generation-failed",
     message: "The kitchen hiccuped — your ingredients are safe, try again.",
+    retryable: true,
+  },
+  cancelled: {
+    kind: "cancelled",
+    message: "Generation cancelled — your ingredients are still here.",
     retryable: true,
   },
 };
@@ -120,9 +129,21 @@ export async function generateRecipe(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
+      signal: perGeneration.signal,
     });
   } catch {
+    // An abort rejects here too — but that is the user leaving, not a fault.
+    if (perGeneration.signal?.aborted) {
+      return { ok: false, error: ERRORS.cancelled };
+    }
     return { ok: false, error: ERRORS["generation-failed"] };
+  }
+
+  // The response can land in the window between the user cancelling and the
+  // abort taking effect. Saving it then would resurrect a recipe they walked
+  // away from, on a screen that has already moved on.
+  if (perGeneration.signal?.aborted) {
+    return { ok: false, error: ERRORS.cancelled };
   }
 
   if (!res.ok) {

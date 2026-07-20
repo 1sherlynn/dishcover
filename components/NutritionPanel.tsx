@@ -142,8 +142,11 @@ export function NutritionPanel({ recipe }: { recipe: Recipe }) {
       </div>
 
       {/* micronutrients */}
+      {/* (#39) These are per serving like the macros above, and equally
+          invariant when the servings scaler moves. The MACROS panel says so;
+          this list said nothing, which is half a label. */}
       <div className="mt-8 flex items-center justify-between">
-        <h2 className="zine-label">Common micronutrients</h2>
+        <h2 className="zine-label">Common micronutrients · per serving</h2>
         <span className="stamp zine-label text-[9px]">~ Estimated</span>
       </div>
       <dl className="mt-2">

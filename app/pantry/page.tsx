@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { EmptyState } from "@/components/ui";
 import { usePantryStore, useHydrated } from "@/lib/store";
+import { findExistingStaple } from "@/lib/pantry";
+import { FOLIO, ZINE_NO, formatFolio } from "@/lib/folio";
 
 // The Pantry as a Riso zine page (reference: "SCREEN · PANTRY"): shelf of
 // staples with ink × boxes, quick-add dashed chips, folio footer.
@@ -20,9 +23,10 @@ export default function PantryPage() {
   const removeStaple = usePantryStore((s) => s.removeStaple);
   const [draft, setDraft] = useState("");
 
+  // Normalisation happens in the store (#42); the page just hands over the
+  // raw text and clears the field.
   const add = (name: string) => {
-    const clean = name.trim().toLowerCase();
-    if (clean) addStaple(clean);
+    addStaple(name);
     setDraft("");
   };
 
@@ -39,7 +43,7 @@ export default function PantryPage() {
           </Link>
           <h1 className="text-3xl font-extrabold uppercase">The Pantry</h1>
         </div>
-        <span className="zine-label hidden text-ink-soft sm:block">No.07</span>
+        <span className="zine-label hidden text-ink-soft sm:block">No.{formatFolio(ZINE_NO)}</span>
       </header>
 
       <p
@@ -84,10 +88,12 @@ export default function PantryPage() {
           </span>
         </div>
 
+        {/* (#43) Was a single line of small text where Home and Cookbook both
+            use a dashed framed box — the shelf read as broken rather than empty. */}
         {hydrated && pantry.length === 0 && (
-          <p className="mt-3 text-sm font-bold text-ink-soft">
+          <EmptyState className="mt-3">
             Bare shelves — tap a staple below to stock up.
-          </p>
+          </EmptyState>
         )}
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -115,7 +121,7 @@ export default function PantryPage() {
         <h2 className="zine-label">Quick add</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {hydrated &&
-            SUGGESTIONS.filter((s) => !pantry.includes(s)).map((s, i) => (
+            SUGGESTIONS.filter((s) => !findExistingStaple(pantry, s)).map((s, i) => (
               <button
                 key={s}
                 type="button"
@@ -132,7 +138,7 @@ export default function PantryPage() {
 
       <footer className="mt-12 flex items-center justify-between border-t-2 border-ink pb-4 pt-3">
         <span className="zine-label">✳ Dishcover</span>
-        <span className="zine-label text-ink-soft">Pg. 02</span>
+        <span className="zine-label text-ink-soft">Pg. {formatFolio(FOLIO.pantry)}</span>
       </footer>
     </main>
   );

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { HeartButton } from "@/components/ui";
+import { EmptyState, HeartButton } from "@/components/ui";
 import { PlaceholderArt } from "@/components/PlaceholderArt";
 import { useRecipeStore, useHydrated } from "@/lib/store";
 import { filterByTab, COOKBOOK_TABS, QUICK_MAX_MINUTES, type CookbookTab } from "@/lib/cookbook";
+import { FOLIO, formatFolio, zineMasthead } from "@/lib/folio";
 
 // Cookbook as a Riso zine page (reference: "SCREEN · COOKBOOK"): the full
 // browsable recipe library. YOUR COOKBOOK title, ALL/FAVORITES/QUICK filter
@@ -31,6 +32,7 @@ export default function CookbookPage() {
   const [tab, setTab] = useState<CookbookTab>("all");
 
   const visible = filterByTab(recipes, tab);
+  const emptyLibrary = hydrated && recipes.length === 0;
 
   return (
     <main>
@@ -43,7 +45,7 @@ export default function CookbookPage() {
         >
           ←
         </Link>
-        <span className="zine-label text-ink-soft">Dishcover Zine · No.07</span>
+        <span className="zine-label text-ink-soft">{zineMasthead()}</span>
       </header>
 
       <section className="rise mt-6" style={{ "--rise-delay": "50ms" } as React.CSSProperties}>
@@ -52,17 +54,22 @@ export default function CookbookPage() {
           <br />
           cookbook
         </h1>
-        <p className="zine-label mt-3 text-ink-soft">
-          {hydrated
-            ? recipes.length === 0
+        {/* (#43) Rendered a literal non-breaking space pre-hydration purely
+            to hold layout; reserve the line with min-height instead. */}
+        <p className="zine-label mt-3 min-h-[1.2em] text-ink-soft">
+          {hydrated &&
+            (recipes.length === 0
               ? "Every recipe you generate lands here."
-              : `${recipes.length} ${recipes.length === 1 ? "recipe" : "recipes"} on the shelf.`
-            : " "}
+              : `${recipes.length} ${recipes.length === 1 ? "recipe" : "recipes"} on the shelf.`)}
         </p>
       </section>
 
-      {/* filter tabs — boxed segments; selected is the plum box */}
+      {/* filter tabs — boxed segments; selected is the plum box. Hidden while
+          the library is empty: nothing to filter. Also hidden until hydration,
+          since pre-hydration `recipes` is always [] — rendering the bar and
+          then pulling it away is the flash this fix exists to remove. */}
       <div
+        hidden={!hydrated || emptyLibrary}
         className="rise mt-6 flex gap-1.5"
         role="tablist"
         aria-label="Filter recipes"
@@ -89,10 +96,23 @@ export default function CookbookPage() {
 
       {/* recipe rows */}
       <section className="mt-6">
-        {hydrated && visible.length === 0 && (
-          <p className="rise border-2 border-dashed border-ink/40 px-6 py-10 text-center font-bold text-ink-soft">
-            {EMPTY_COPY[tab]}
-          </p>
+        {emptyLibrary && (
+          <EmptyState
+            action={
+              <Link
+                href="/new"
+                className="inline-block border-2 border-ink bg-accent px-6 py-3 font-display text-sm font-bold uppercase tracking-wider text-accent-ink shadow-[3px_3px_0_var(--th-ink)] transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              >
+                + Make your first recipe
+              </Link>
+            }
+          >
+            {EMPTY_COPY.all}
+          </EmptyState>
+        )}
+
+        {hydrated && !emptyLibrary && visible.length === 0 && (
+          <EmptyState>{EMPTY_COPY[tab]}</EmptyState>
         )}
 
         <div className="flex flex-col gap-3">
@@ -133,7 +153,7 @@ export default function CookbookPage() {
       {/* folio */}
       <footer className="mt-12 flex items-center justify-between border-t-2 border-ink pb-4 pt-3">
         <span className="zine-label">✳ Dishcover</span>
-        <span className="zine-label text-ink-soft">Pg. 03</span>
+        <span className="zine-label text-ink-soft">Pg. {formatFolio(FOLIO.cookbook)}</span>
       </footer>
     </main>
   );

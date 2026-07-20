@@ -3,10 +3,49 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { MacroTarget, MealSettings, Recipe } from "./schemas";
+import { addStaple as addStapleTo } from "./pantry";
+import { createGuardedStorage } from "./storage-guard";
 
 // Device-local persistence only (ADR-0002). Keys per docs/DATA-MODEL.md.
 
 const RECIPE_CAP = 200;
+
+/** The persisted store keys, per docs/DATA-MODEL.md. */
+export const STORE_KEYS = {
+  recipes: "dishcover.recipes.v1",
+  pantry: "dishcover.pantry.v1",
+  prefs: "dishcover.prefs.v1",
+  draft: "dishcover.draft.v1",
+} as const;
+
+export type StoreKey = (typeof STORE_KEYS)[keyof typeof STORE_KEYS];
+
+// Storage health (#40). localStorage has no room left and the write just
+// failed — the data is still in memory for this session, but it will not
+// survive a reload. RECIPE_CAP above bounds the recipe *count*; this is
+// about bytes, which run out first. Not itself persisted: writing it
+// could fail too.
+interface StorageHealthState {
+  /** The store key whose last write was rejected for want of quota. */
+  failedKey: string | null;
+  reportQuotaExceeded: (key: string) => void;
+  clearQuotaError: () => void;
+}
+
+export const useStorageHealth = create<StorageHealthState>()((set) => ({
+  failedKey: null,
+  reportQuotaExceeded: (key) => set({ failedKey: key }),
+  clearQuotaError: () => set({ failedKey: null }),
+}));
+
+/**
+ * localStorage for a persisted store, with quota failures routed to the
+ * health store instead of disappearing. Every persisted store uses this.
+ */
+const guardedLocalStorage = () =>
+  createGuardedStorage(localStorage, (key) =>
+    useStorageHealth.getState().reportQuotaExceeded(key)
+  );
 
 interface RecipeState {
   recipes: Recipe[];
@@ -39,9 +78,9 @@ export const useRecipeStore = create<RecipeState>()(
         set((s) => ({ recipes: s.recipes.filter((r) => r.id !== id) })),
     }),
     {
-      name: "dishcover.recipes.v1",
+      name: STORE_KEYS.recipes,
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(guardedLocalStorage),
     }
   )
 );
@@ -59,17 +98,36 @@ export const usePantryStore = create<PantryState>()(
   persist(
     (set) => ({
       pantry: [],
+      // Normalisation and the same-item guard live in lib/pantry.ts (#42);
+      // addStapleTo returns the same array reference when there's nothing
+      // to do, so an already-held staple costs no write.
       addStaple: (name) =>
-        set((s) =>
-          s.pantry.includes(name) ? s : { pantry: [...s.pantry, name] }
-        ),
+        set((s) => {
+          const pantry = addStapleTo(s.pantry, name);
+          return pantry === s.pantry ? s : { pantry };
+        }),
       removeStaple: (name) =>
         set((s) => ({ pantry: s.pantry.filter((x) => x !== name) })),
     }),
     {
-      name: "dishcover.pantry.v1",
-      version: 1,
-      storage: createJSONStorage(() => localStorage),
+      name: STORE_KEYS.pantry,
+      // v2 (#42): staples are stored in canonical singular form. Pantries
+      // written at v1 hold plurals ("tomatoes"), so fold them once on read
+      // rather than normalising on every comparison forever. Deduping is
+      // part of the migration: "tomato" and "tomatoes" collapse to one.
+      version: 2,
+      migrate: (persisted, version) => {
+        const state = persisted as PantryState;
+        if (version >= 2) return state;
+        return {
+          ...state,
+          pantry: (state?.pantry ?? []).reduce<string[]>(
+            (acc, name) => addStapleTo(acc, name),
+            []
+          ),
+        };
+      },
+      storage: createJSONStorage(guardedLocalStorage),
     }
   )
 );
@@ -113,9 +171,9 @@ export const usePrefsStore = create<PrefsState>()(
         set((s) => ({ avoidList: s.avoidList.filter((x) => x !== name) })),
     }),
     {
-      name: "dishcover.prefs.v1",
+      name: STORE_KEYS.prefs,
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(guardedLocalStorage),
     }
   )
 );
@@ -162,9 +220,9 @@ export const useDraftStore = create<DraftState>()(
         }),
     }),
     {
-      name: "dishcover.draft.v1",
+      name: STORE_KEYS.draft,
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(guardedLocalStorage),
     }
   )
 );

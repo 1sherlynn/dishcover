@@ -120,3 +120,27 @@ export function HeartButton({
     </button>
   );
 }
+
+/**
+ * The zine's empty state: a dashed frame with centred copy, optionally
+ * carrying a way out of the emptiness. Home, Cookbook and Pantry all use
+ * it, so "thinner than the rest" (#43) cannot recur by drift.
+ */
+export function EmptyState({
+  children,
+  action,
+  className = "",
+}: {
+  children: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rise border-2 border-dashed border-ink/40 px-6 py-10 text-center ${className}`}
+    >
+      <p className="font-bold text-ink-soft">{children}</p>
+      {action && <div className="mt-5">{action}</div>}
+    </div>
+  );
+}
