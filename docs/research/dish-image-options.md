@@ -100,7 +100,7 @@ All prices checked **2026-07-19**. Sources are linked per row below the table.
 | **A. Ingredient-aware procedural** | **$0.00** | 0 ms | **Yes** — is Riso | none (SVG from data) | none |
 | **B. AI image, riso-styled prompt** | $0.006–$0.211 | ~5 s–2 min | Plausibly; unverified | raster; needs a home | output ownership OK; ADR-0004 reversal |
 | **C. AI image, photoreal** | same as B | same as B | **No** | same as B | same as B |
-| **D. Stock photography** | $0.00 (free tiers) | ~200–800 ms lookup | **No** | hotlink or cache | **attribution + anti-competing-use clauses** |
+| **D. Stock photography** | $0.00 free / $0.27–$3.00 paid | ~200–800 ms lookup | **No** | hotlink or cache | **attribution, anti-competing-use, app carve-outs** |
 | **E. Hybrid: procedural default, AI on tap** | $0.00 baseline, B on demand | 0 ms default | Baseline yes | only for tapped recipes | as B, but opt-in |
 
 **Headline per-image prices (2026-07-19):**
@@ -204,9 +204,16 @@ with `/prototype`. Note also that AI output is *inconsistent* across recipes in 
 generator is not; Riso's coherence argument may be strained by variance even when each individual
 image looks on-brand.
 
+**All Gemini-generated images carry SynthID watermarking.** Google applies it to every image its
+models produce. FLUX has no equivalent documented. Whether an invisible provenance watermark
+matters for a personal recipe app is a judgement call, not a blocker — but it is a property of the
+artifact that should be decided knowingly rather than discovered later, and it cuts specifically
+against the option that is otherwise cheapest to integrate.
+
 **Ownership:** commercial use and ownership of generated output is granted by both OpenAI and
 Google under their standard API terms. I did **not** independently verify the current wording of
-either terms-of-service document — see below.
+either terms-of-service document — `openai.com/policies/*` returns 403 to automated fetching, so
+OpenAI's output-ownership clause needs a manual read if OpenAI stays in contention. See below.
 
 ### D. Stock / open-licence photography
 
@@ -225,12 +232,34 @@ is itself a design intrusion into the zine layout. Rate limits are described onl
 limit" with no published number; Pexels states limits can be lifted free of charge if attribution
 is shown properly.
 
-**Coverage is the unquantified killer.** Dishcover's recipes are LLM-generated with free-text
-titles. A dish named "miso-glazed aubergine with charred spring onion" will not have a matching
-stock photo. The realistic behaviour is falling back to a generic bowl-of-something — i.e.
-**exactly the failure mode Sherlynn is complaining about today**, but now off-brand *and* with a
-photographer credit attached. I could not quantify hit-rate (see below), but the structural
-argument does not depend on the number.
+**Coverage is the killer, and it is now partly measured.** Spot searches against the free APIs
+(2026-07-19): *"miso glazed aubergine"* returns **1 result on Unsplash, and it is wrong**; Pexels
+returns ~9.8K hits that are generic raw-eggplant photography, not the dish. Even a mainstream dish
+fails — *carbonara* returns mostly tomato-sauce pasta. The failure is structural rather than a
+matter of corpus size: **LLM-generated dish names largely do not exist as photographs.** The
+realistic behaviour is falling back to a generic bowl-of-something — i.e. **exactly the failure
+mode Sherlynn is complaining about today**, but now off-brand *and* carrying a photographer
+credit. This is a qualitative sample, not a hit-rate; see "could not determine".
+
+**Paid stock does not fix it, and cannot be automated.** Per-image, cheapest tier, checked
+2026-07-19: **Shutterstock Unlimited $29/mo annual** ($348/yr, effectively unlimited images);
+**iStock Basic** 750/mo $199 (**$0.27/image**); **Adobe Stock** 10 credits $29.99 ($3.00/image);
+**Getty** $225/mo for 10 downloads ($22.50/image — not a candidate). Credit packs are uniformly
+worse ($8–12/image) than subscriptions.
+
+Two findings matter more than the prices:
+
+- **No paid provider offers self-serve programmatic access at published rates.** Shutterstock's
+  API is "Contact Sales" with no published pricing; Getty and iStock APIs are enterprise-gated;
+  Adobe's API docs could not be loaded. **This alone disqualifies paid stock from an automated
+  per-recipe pipeline**, independent of cost or coverage.
+- **The licenses have app-shaped carve-outs.** iStock's
+  [standard license](https://www.istockphoto.com/legal/license-agreement) excludes electronic
+  products where the content is the primary value, and it is the **Extended** license that
+  explicitly covers mobile applications — Dishcover is arguably the excluded case.
+  [Adobe's standard license](https://stock.adobe.com/license-terms) caps reproduction at 500,000
+  copies. **Shutterstock's license agreement could not be retrieved at all** (403 to every
+  method), so the cheapest option is the one whose terms are unverified.
 
 ### E. Hybrid
 
@@ -258,19 +287,27 @@ server-side record of user-generated content where the ADR says there deliberate
 
 Stated plainly rather than guessed:
 
-- **FLUX / Black Forest Labs per-image pricing.** `https://bfl.ai/pricing` renders its rates
-  through an interactive calculator; no numeric per-image figure was extractable from the page.
-  Same for Replicate and fal.ai, which price per-second of compute for many models rather than
-  per-image, making a per-recipe figure model- and hardware-dependent. **If open-weights hosting
-  is a serious candidate, this needs a follow-up with an actual API call.**
+- **FLUX / Black Forest Labs per-image pricing — deliberately not stated here.**
+  `https://bfl.ai/pricing` renders its rates through an interactive calculator; no numeric
+  per-image figure was extractable. Replicate and fal.ai price per-second of compute for many
+  models, making a per-recipe figure model- and hardware-dependent. A parallel research pass
+  produced candidate figures for FLUX Schnell and Gemini 3.1 Flash Lite, but its per-image numbers
+  and its 10,000-image totals **disagreed with each other by a factor of 100 in both cases**, so
+  neither is recorded here. Treat cheap open-weights hosting as *plausibly an order of magnitude
+  below the table above, magnitude unconfirmed*. **If it is a serious candidate, price it with an
+  actual API call rather than from a pricing page.**
 - **Typical AI generation latency.** OpenAI publishes only an upper bound ("up to 2 minutes");
   Google publishes none. The 5 s figure in the table above is a common-experience estimate, **not
   a sourced number** — treat it as unverified. This matters, because latency is the binding
   constraint for options B/C, and it is the one number I could not source.
-- **Stock-photo coverage rate.** What fraction of LLM-generated dish titles would find a
-  plausible Unsplash/Pexels match is not published by either provider and cannot be derived from
-  documentation. Measuring it would mean running ~50 real generated titles through both APIs and
-  scoring the results by hand — a small prototype, not a research task.
+- **Stock-photo coverage *rate*** — partially answered, not quantified. The spot searches in
+  option D are a qualitative sample (n≈3), enough to show the failure is structural but not enough
+  to state a hit-rate. A real number means running ~50 generated titles through both APIs and
+  scoring by hand — a small prototype, not a research task. Paid-stock corpora are likely better
+  than free ones, but could not be measured at all because access is sales-gated.
+- **Shutterstock's license terms.** Every retrieval method returned 403. The cheapest paid option
+  is therefore the one whose terms are unread; given iStock's comparable license carries an
+  explicit mobile-app carve-out, that is exactly where the risk would sit.
 - **Whether riso-styled prompting actually holds up.** Not a documentation question. Requires
   generated images judged by a human, which is #27's job.
 - **Current OpenAI/Google terms-of-service wording on generated-output ownership.** I relied on
@@ -295,3 +332,8 @@ Not a recommendation — the shape of the choice:
    constraints are ADR-0002 (raster images have nowhere to live), latency, and Riso's coherence.
 4. **The procedural generator survives every path** — as the product, or as the placeholder and
    failure fallback. Improving it is not wasted work under any outcome.
+5. **Stock photography is the weakest option on the evidence gathered**, for reasons that have
+   nothing to do with price: coverage fails structurally against LLM-generated dish names, no paid
+   provider offers self-serve programmatic access, and the licenses carry app-shaped carve-outs.
+   It is recorded here in full because #27 asked for the option space, not a shortlist — but it is
+   the row where the research pushed hardest against the option.
