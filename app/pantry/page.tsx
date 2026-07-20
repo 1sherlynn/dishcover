@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { EmptyState } from "@/components/ui";
 import { usePantryStore, useHydrated } from "@/lib/store";
 import { findExistingStaple } from "@/lib/pantry";
 import { FOLIO, ZINE_NO, formatFolio } from "@/lib/folio";
@@ -90,9 +91,9 @@ export default function PantryPage() {
         {/* (#43) Was a single line of small text where Home and Cookbook both
             use a dashed framed box — the shelf read as broken rather than empty. */}
         {hydrated && pantry.length === 0 && (
-          <p className="rise mt-3 border-2 border-dashed border-ink/40 px-6 py-10 text-center font-bold text-ink-soft">
+          <EmptyState className="mt-3">
             Bare shelves — tap a staple below to stock up.
-          </p>
+          </EmptyState>
         )}
 
         <div className="mt-3 flex flex-wrap gap-2">

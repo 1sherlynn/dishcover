@@ -1,6 +1,6 @@
 "use client";
 
-import { useStorageHealth } from "@/lib/store";
+import { STORE_KEYS, useStorageHealth, type StoreKey } from "@/lib/store";
 
 // The error surface for a full device store (#40). Persistence is
 // client-only (ADR-0002), so when localStorage rejects a write the recipe
@@ -8,15 +8,18 @@ import { useStorageHealth } from "@/lib/store";
 // Before this, that happened silently and saved recipes were lost.
 //
 // This says what happened and what the user can do about it *today*
-// (delete some recipes). It does not evict anything on their behalf: what
-// the app should do about a full store — LRU eviction, compression, an
-// IndexedDB migration, or amending ADR-0002 — is still an open decision.
+// (delete some recipes). The recipe store's soft cap of ~200 with LRU
+// eviction (docs/DATA-MODEL.md) counts entries, not bytes, so it does not
+// help here — the quota is exhausted at roughly 60-120 recipes, long
+// before the cap. What the app should do about *byte* exhaustion —
+// eviction by size, compression, an IndexedDB migration, or amending
+// ADR-0002 — is still an open decision (#40), so this reports and stops.
 
-const LABELS: Record<string, string> = {
-  "dishcover.recipes.v1": "recipe",
-  "dishcover.pantry.v1": "pantry change",
-  "dishcover.prefs.v1": "settings change",
-  "dishcover.draft.v1": "draft",
+const LABELS: Record<StoreKey, string> = {
+  [STORE_KEYS.recipes]: "recipe",
+  [STORE_KEYS.pantry]: "pantry change",
+  [STORE_KEYS.prefs]: "settings change",
+  [STORE_KEYS.draft]: "draft",
 };
 
 export function StorageAlert() {
@@ -24,7 +27,7 @@ export function StorageAlert() {
   const clearQuotaError = useStorageHealth((s) => s.clearQuotaError);
 
   if (!failedKey) return null;
-  const what = LABELS[failedKey] ?? "change";
+  const what = LABELS[failedKey as StoreKey] ?? "change";
 
   return (
     <div

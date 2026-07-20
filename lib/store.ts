@@ -10,9 +10,21 @@ import { createGuardedStorage } from "./storage-guard";
 
 const RECIPE_CAP = 200;
 
+/** The persisted store keys, per docs/DATA-MODEL.md. */
+export const STORE_KEYS = {
+  recipes: "dishcover.recipes.v1",
+  pantry: "dishcover.pantry.v1",
+  prefs: "dishcover.prefs.v1",
+  draft: "dishcover.draft.v1",
+} as const;
+
+export type StoreKey = (typeof STORE_KEYS)[keyof typeof STORE_KEYS];
+
 // Storage health (#40). localStorage has no room left and the write just
 // failed — the data is still in memory for this session, but it will not
-// survive a reload. Not itself persisted: writing it could fail too.
+// survive a reload. RECIPE_CAP above bounds the recipe *count*; this is
+// about bytes, which run out first. Not itself persisted: writing it
+// could fail too.
 interface StorageHealthState {
   /** The store key whose last write was rejected for want of quota. */
   failedKey: string | null;
@@ -66,7 +78,7 @@ export const useRecipeStore = create<RecipeState>()(
         set((s) => ({ recipes: s.recipes.filter((r) => r.id !== id) })),
     }),
     {
-      name: "dishcover.recipes.v1",
+      name: STORE_KEYS.recipes,
       version: 1,
       storage: createJSONStorage(guardedLocalStorage),
     }
@@ -98,8 +110,23 @@ export const usePantryStore = create<PantryState>()(
         set((s) => ({ pantry: s.pantry.filter((x) => x !== name) })),
     }),
     {
-      name: "dishcover.pantry.v1",
-      version: 1,
+      name: STORE_KEYS.pantry,
+      // v2 (#42): staples are stored in canonical singular form. Pantries
+      // written at v1 hold plurals ("tomatoes"), so fold them once on read
+      // rather than normalising on every comparison forever. Deduping is
+      // part of the migration: "tomato" and "tomatoes" collapse to one.
+      version: 2,
+      migrate: (persisted, version) => {
+        const state = persisted as PantryState;
+        if (version >= 2) return state;
+        return {
+          ...state,
+          pantry: (state?.pantry ?? []).reduce<string[]>(
+            (acc, name) => addStapleTo(acc, name),
+            []
+          ),
+        };
+      },
       storage: createJSONStorage(guardedLocalStorage),
     }
   )
@@ -144,7 +171,7 @@ export const usePrefsStore = create<PrefsState>()(
         set((s) => ({ avoidList: s.avoidList.filter((x) => x !== name) })),
     }),
     {
-      name: "dishcover.prefs.v1",
+      name: STORE_KEYS.prefs,
       version: 1,
       storage: createJSONStorage(guardedLocalStorage),
     }
@@ -193,7 +220,7 @@ export const useDraftStore = create<DraftState>()(
         }),
     }),
     {
-      name: "dishcover.draft.v1",
+      name: STORE_KEYS.draft,
       version: 1,
       storage: createJSONStorage(guardedLocalStorage),
     }

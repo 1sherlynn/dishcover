@@ -70,7 +70,7 @@ interface Preferences {
                                // future theme issue
 }
 
-type Pantry = string[];        // ingredient names, canonical lowercase
+type Pantry = string[];        // ingredient names, canonical form (see below)
 
 interface Draft {               // in-progress New Recipe form (issue #8)
   ingredients: string[];        // captured chips, canonical lowercase
@@ -85,8 +85,34 @@ interface Draft {               // in-progress New Recipe form (issue #8)
 | Key | Contents |
 |---|---|
 | `dishcover.recipes.v1` | `Recipe[]` (newest first, soft cap ~200 with LRU eviction of non-favorites) |
-| `dishcover.pantry.v1` | `Pantry` |
+| `dishcover.pantry.v1` | `Pantry` (**v2** — canonical singular; see Pantry canonical form) |
 | `dishcover.prefs.v1` | `Preferences` |
 | `dishcover.draft.v1` | `Draft` — in-progress New Recipe form (survives accidental refresh); cleared on successful generation |
+
+### Pantry canonical form
+
+A Pantry staple is stored trimmed, lowercased, internally whitespace-collapsed,
+and with its head noun folded to singular — `"  Sun Dried Tomatoes "` is stored
+as `"sun dried tomato"`. Mass nouns that merely end in `-s` (`"molasses"`,
+`"couscous"`) are left alone. `lib/pantry.ts` owns this; nothing else should
+re-implement it.
+
+Adding is guarded against the same item arriving in another form, so
+`"tomatoes"` and `"tomato"` cannot both occupy the shelf (#42).
+
+`dishcover.pantry.v1` predates this rule and holds plurals. The store migrates
+v1 → v2 on rehydrate, folding each entry and collapsing any duplicates the fold
+creates. Full linguistic normalisation is explicitly out of scope, and whether
+the Pantry should have a controlled vocabulary at all remains an open design
+question.
+
+### Storage quota
+
+Writes go through the guard in `lib/storage-guard.ts`, which detects
+`QuotaExceededError` and reports it to the storage-health store rather than
+letting the write fail silently — at roughly 60-120 recipes the quota is
+exhausted, well before the recipe soft cap above, and recipe data was being
+lost with no error surface (#40). The guard only reports; how the app should
+*recover* from a full store is still an open decision.
 
 State management: Zustand stores hydrated from these keys, write-through on change. No server persistence of any kind; the LLM proxy is stateless.

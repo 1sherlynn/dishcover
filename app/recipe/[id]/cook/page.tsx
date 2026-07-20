@@ -15,7 +15,13 @@ function formatClock(totalSeconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-function StepTimer({ seconds }: { seconds: number }) {
+function StepTimer({
+  seconds,
+  onRunningChange,
+}: {
+  seconds: number;
+  onRunningChange: (running: boolean) => void;
+}) {
   const [remaining, setRemaining] = useState(seconds);
   const [running, setRunning] = useState(false);
   const done = remaining === 0;
@@ -25,6 +31,15 @@ function StepTimer({ seconds }: { seconds: number }) {
     const tick = setInterval(() => setRemaining((r) => Math.max(0, r - 1)), 1000);
     return () => clearInterval(tick);
   }, [running, done]);
+
+  // A running timer is progress worth protecting on exit (#43).
+  useEffect(() => {
+    onRunningChange(running && !done);
+  }, [running, done, onRunningChange]);
+
+  // The parent remounts this on step change; make sure a stale "running"
+  // never outlives the step it belonged to.
+  useEffect(() => () => onRunningChange(false), [onRunningChange]);
 
   return (
     <div
@@ -80,6 +95,7 @@ export default function CookPage({ params }: { params: Promise<{ id: string }> }
   // user had no way to know whether the screen would actually stay awake —
   // and therefore no reason to trust it with wet hands mid-recipe.
   const [awake, setAwake] = useState(false);
+  const [timerRunning, setTimerRunning] = useState(false);
 
   // Keep the screen awake while cooking; degrade quietly where unsupported,
   // but always report which of the two we got.
@@ -144,8 +160,10 @@ export default function CookPage({ params }: { params: Promise<{ id: string }> }
             type="button"
             aria-label="Close cooking mode"
             onClick={() => {
-              const started = stepIndex > 0;
-              if (started && !confirm("Stop cooking? You'll lose your place and any running timer.")) {
+              // Step 1 with a timer counting down is still a cook in
+              // progress — position alone is not the whole of it.
+              const inProgress = stepIndex > 0 || timerRunning;
+              if (inProgress && !confirm("Stop cooking? You'll lose your place and any running timer.")) {
                 return;
               }
               router.push(`/recipe/${recipe.id}`);
@@ -200,7 +218,9 @@ export default function CookPage({ params }: { params: Promise<{ id: string }> }
           >
             {step.body}
           </p>
-          {step.timerSeconds && <StepTimer seconds={step.timerSeconds} />}
+          {step.timerSeconds && (
+            <StepTimer seconds={step.timerSeconds} onRunningChange={setTimerRunning} />
+          )}
         </section>
 
         <footer className="mt-10 flex items-center gap-4">

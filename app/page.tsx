@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { HeartButton } from "@/components/ui";
+import { EmptyState, HeartButton } from "@/components/ui";
 import { PlaceholderArt } from "@/components/PlaceholderArt";
 import { useRecipeStore, usePantryStore, useHydrated } from "@/lib/store";
 import { FOLIO, formatFolio, zineMasthead } from "@/lib/folio";
@@ -112,9 +112,9 @@ export default function HomePage() {
         />
 
         {hydrated && recipes.length === 0 && (
-          <p className="mt-4 border-2 border-dashed border-ink/40 px-6 py-10 text-center font-bold text-ink-soft">
+          <EmptyState className="mt-4">
             Nothing simmering yet — your generated recipes will live here.
-          </p>
+          </EmptyState>
         )}
 
         {hydrated && featured && (
